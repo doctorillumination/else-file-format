@@ -1,0 +1,33 @@
+name: Verify the experiment
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  readers:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Build the native reader and desktop icon
+        run: zsh build.sh --universal
+      - name: Verify both readers and malformed fixtures
+        run: python3 test_experiment.py
+      - name: Verify the generated website matches its source
+        run: |
+          python3 build_site.py
+          git diff --exit-code -- docs
+      - name: Check the app signature and architectures
+        run: |
+          codesign --verify --deep --strict 'output/Else Experiment.app'
+          lipo -verify_arch arm64 x86_64 'output/Else Experiment.app/Contents/MacOS/ElseExperiment'

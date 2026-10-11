@@ -1,0 +1,120 @@
+<img src="assets/ElseIcon.png" width="96" alt="The .else paired-leaf icon">
+
+# .else
+
+A file, with room for its context.
+
+`.else` is an experiment in a native Cyberdelic OS file format: ordinary material can travel with attributed interpretations, source information and selected context. The material keeps its own life. A PDF can leave the package again as an ordinary, unchanged PDF.
+
+This first standalone experiment contains **one PDF, two interpretations and two independent readers**. It explores a practical Carry-like reading and a Dear Elsewhere-like encounter reading. It changes neither application and does not replace their existing `.else` formats.
+
+## Try the experiment
+
+- [Read the public specimen in your browser](https://doctorillumination.github.io/else-file-format/).
+- [Download the experimental macOS reader](https://github.com/doctorillumination/else-file-format/releases/download/v0.1.0-experiment/Else-Experiment-macOS-universal.zip).
+- [Download the specimen](specimen/One-file-two-readings.else) or [inspect the format](FORMAT.md).
+
+The macOS download contains Apple silicon and Intel builds targeting macOS 14 or later. It is ad hoc signed and has not been notarized by Apple. Gatekeeper may block a downloaded build. Building from source is also available below.
+
+The website displays this public specimen, independently decoded by the Python reader at build time. It offers the original PDF, selected AI context, `.else` specimen and macOS app download. It does not upload files or open arbitrary packages in the browser yet.
+
+Linux and Windows desktop apps are planned. The independent Python command-line reader already uses only the standard library, making it portable across those systems. Desktop packaging and platform verification remain separate work.
+
+## In the macOS reader
+
+1. Open **Else Experiment.app**. The sample loads automatically.
+2. Read the PDF and both interpretations beside it.
+3. Drag the green **Drag the original PDF out** card to a Finder folder, or choose **Save original PDF**. The exported file contains the exact original PDF bytes, without context injected into it.
+4. Choose **Open PDF** to use a temporary ordinary copy in your default PDF application.
+5. Choose **AI context** to inspect or save the source text, attribution, references and evidence limits.
+6. Choose **Inspection reader** to open a self-contained browser report, independently decoded by Python. The default sample report is included in the app, so trying it does not require a separate Python installation. Generating a report for another package requires Python 3.
+
+The PDF and both interpretations are AI-authored demonstration material, not words attributed to Bradley or Jason and not ratified Kernel text. No AI service is called automatically. The app does not register itself as the system's default `.else` handler.
+
+Native Save original and browser download have been verified byte for byte. The AppKit drag starts a copy operation, but the final Finder destination still needs a direct manual check. See [verification](VERIFICATION.md).
+
+## Build the macOS reader
+
+Requirements: macOS, Apple command line developer tools with Swift 5.9 or newer, and Python 3.9 or newer. The app uses AppKit, PDFKit and CryptoKit. The Python reader has no third-party dependencies.
+
+```sh
+git clone https://github.com/doctorillumination/else-file-format.git
+cd else-file-format
+zsh build.sh
+open 'output/Else Experiment.app'
+python3 test_experiment.py
+```
+
+To include both Mac architectures:
+
+```sh
+zsh build.sh --universal
+```
+
+The build generates the desktop icon from the included [source artwork](assets/ElseIcon.png). GitHub Actions builds both architectures and runs the cross-reader checks on two macOS runners.
+
+## Use the independent reader
+
+```sh
+python3 reader.py specimen/One-file-two-readings.else
+python3 reader.py specimen/One-file-two-readings.else --extract original.pdf
+python3 reader.py specimen/One-file-two-readings.else --context context.md --html reader.html
+```
+
+Choose fresh export destinations. This reader refuses to overwrite an existing file. Native Save original uses a system save panel's explicit replacement choice.
+
+The native implementation also exposes inspection and export commands:
+
+```sh
+'output/Else Experiment.app/Contents/MacOS/ElseExperiment' --inspect specimen/One-file-two-readings.else
+'output/Else Experiment.app/Contents/MacOS/ElseExperiment' --context specimen/One-file-two-readings.else
+'output/Else Experiment.app/Contents/MacOS/ElseExperiment' --extract specimen/One-file-two-readings.else original.pdf
+```
+
+## Preview and rebuild the website
+
+For a loopback preview limited to the public specimen:
+
+```sh
+python3 preview.py
+```
+
+Open `http://127.0.0.1:8784/`. The preview has no directory listing or general filesystem routes.
+
+`python3 build_site.py` regenerates the static specimen website in `docs/`. GitHub Pages serves this directory. The page embeds the exact PDF bytes and generated context. No server-side Python, account, analytics or remote PDF fetch is needed.
+
+## Recreate the sample
+
+Only the fixture writer needs third-party PDF libraries. These are not required for reading, exporting or building the macOS app.
+
+```sh
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r requirements-specimen.txt
+python3 make_specimen.py
+python3 build_site.py
+```
+
+The writer creates deliberately public material in `specimen/`. It does not read app stores, private notes, identity keys or collecting history.
+
+## What the experiment establishes
+
+The two independent implementations recover the same source, interpretations and selected AI context. Content hashes bind the included bytes to their records. Extraction leaves the package unchanged, and editing an external PDF copy does not silently alter the `.else`.
+
+The package is unsigned and unencrypted. Creator labels are declarations; hashes do not authenticate identity, consent or authorship. This is an experimental parser, not a production security audit. See the [bounded wire contract](FORMAT.md) and [verification record](VERIFICATION.md).
+
+The AI projection is selected task data. It includes source words, contributor roles, input and target references, status and disclosed omissions. It cannot grant an AI access to other files or authorize actions. Source material, attributed interpretation and future machine proposals remain distinct.
+
+## The next experiment
+
+The website can become the accessible reader across macOS, Linux and Windows. A future client-side importer would validate a chosen package entirely on the person's device before showing its PDF and context. Desktop readers would add native drag-out, offline file opening and file associations.
+
+Future collaboration can add written or spoken responses, with each contribution linked to its input revision and kept distinct from the source. Signatures, transport, live AI participation, revision merging, Carry events and Dear Elsewhere arrivals require their own experiments and human decisions. None is represented as implemented here.
+
+## Background and license
+
+[Field Note 45, The File Is a Score](https://cyberdelic.space/project/cyberdelic-os/field-notes/fn-45/) describes the artistic direction. This repository makes a small, inspectable technical response to it.
+
+The app's drag gesture uses [AppKit dragging sessions](https://developer.apple.com/documentation/appkit/nsview/begindraggingsession(with:event:source:)) and displays the original with [PDFKit](https://developer.apple.com/documentation/pdfkit/pdfview).
+
+[MIT license](LICENSE). The public specimen and generated icon are included with the experiment.
