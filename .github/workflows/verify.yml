@@ -30,4 +30,4 @@ jobs:
       - name: Check the app signature and architectures
         run: |
           codesign --verify --deep --strict 'output/Else Experiment.app'
-          lipo 'output/Else Experiment.app/Contents/MacOS/ElseExperiment' -verify_arch arm64 x86_64
+          python3 -c "import subprocess; assert set(subprocess.check_output(['xcrun', 'lipo', '-archs', 'output/Else Experiment.app/Contents/MacOS/ElseExperiment'], text=True).split()) == {'arm64', 'x86_64'}"
