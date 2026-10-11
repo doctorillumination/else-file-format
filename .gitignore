@@ -3,3 +3,4 @@ output/
 app-boundary-before.json
 .DS_Store
 .venv/
+node_modules/

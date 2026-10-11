@@ -8,6 +8,8 @@ A file, with room for its context.
 
 This first standalone experiment contains **one PDF, two interpretations and two independent readers**. It explores a practical Carry-like reading and a Dear Elsewhere-like encounter reading. It changes neither application and does not replace their existing `.else` formats.
 
+The website now adds a third independent reader in JavaScript, using the same bounded format and the same selected AI context.
+
 ## Try the experiment
 
 - [Read the public specimen in your browser](https://doctorillumination.github.io/else-file-format/).
@@ -16,7 +18,11 @@ This first standalone experiment contains **one PDF, two interpretations and two
 
 The macOS download contains Apple silicon and Intel builds targeting macOS 14 or later. It is ad hoc signed and has not been notarized by Apple. Gatekeeper may block a downloaded build. Building from source is also available below.
 
-The website displays this public specimen, independently decoded by the Python reader at build time. It offers the original PDF, selected AI context, `.else` specimen and macOS app download. It does not upload files or open arbitrary packages in the browser yet.
+On the website, drag a `.else` file onto the page or choose **Choose .else file**. A supported file opens entirely on your device. Choose **Save original PDF** or **Save AI context** to export either without changing the package. The PDF remains an ordinary, exact-byte PDF.
+
+The browser validates the archive, references, hashes and selected records before replacing the view. It accepts the standalone `two-readings/0.1-experimental` profile, up to 64 MiB; other Dear Elsewhere or Carry formats remain separate. An invalid file leaves the previous valid file open with a clear error.
+
+Once the page has loaded, file opening, PDF preview and both exports work offline. Selected bytes stay in tab memory. The reader performs no upload, AI call, background storage or tracking. Reloading returns to the public specimen. The PDF preview uses a bundled local renderer, with no active document scripts or forms; see [third-party attribution](THIRD_PARTY.md).
 
 Linux and Windows desktop apps are planned. The independent Python command-line reader already uses only the standard library, making it portable across those systems. Desktop packaging and platform verification remain separate work.
 
@@ -42,7 +48,6 @@ git clone https://github.com/doctorillumination/else-file-format.git
 cd else-file-format
 zsh build.sh
 open 'output/Else Experiment.app'
-python3 test_experiment.py
 ```
 
 To include both Mac architectures:
@@ -52,6 +57,12 @@ zsh build.sh --universal
 ```
 
 The build generates the desktop icon from the included [source artwork](assets/ElseIcon.png). GitHub Actions builds both architectures and runs the cross-reader checks on two macOS runners.
+
+Cross-reader verification also requires Node.js 20 or later:
+
+```sh
+python3 test_experiment.py
+```
 
 ## Use the independent reader
 
@@ -81,7 +92,17 @@ python3 preview.py
 
 Open `http://127.0.0.1:8784/`. The preview has no directory listing or general filesystem routes.
 
-`python3 build_site.py` regenerates the static specimen website in `docs/`. GitHub Pages serves this directory. The page embeds the exact PDF bytes and generated context. No server-side Python, account, analytics or remote PDF fetch is needed.
+`python3 build_site.py` regenerates the static website in `docs/`. GitHub Pages serves this directory. The default sample is embedded, while chosen files are decoded locally by JavaScript. The bundled PDF renderer and worker load with the page. No server-side Python, account, analytics, external CDN or remote PDF fetch is needed.
+
+To run the isolated browser checks, with Node.js 20 or later:
+
+```sh
+npm ci
+npx playwright install chromium
+npm run test:browser
+```
+
+These tests use synthetic packages and a fresh browser profile. They exercise drag-in, keyboard file selection, exact downloads, rejected content, overlapping file choices, clearing on reload, narrow layouts and zero HTTP requests during local file use. Test tooling is not required to use the website.
 
 ## Recreate the sample
 
@@ -99,7 +120,7 @@ The writer creates deliberately public material in `specimen/`. It does not read
 
 ## What the experiment establishes
 
-The two independent implementations recover the same source, interpretations and selected AI context. Content hashes bind the included bytes to their records. Extraction leaves the package unchanged, and editing an external PDF copy does not silently alter the `.else`.
+The Swift, Python and JavaScript implementations recover the same source, interpretations and selected AI context. Content hashes bind the included bytes to their records. Extraction leaves the package unchanged, and editing an external PDF copy does not silently alter the `.else`.
 
 The package is unsigned and unencrypted. Creator labels are declarations; hashes do not authenticate identity, consent or authorship. This is an experimental parser, not a production security audit. See the [bounded wire contract](FORMAT.md) and [verification record](VERIFICATION.md).
 
@@ -107,7 +128,7 @@ The AI projection is selected task data. It includes source words, contributor r
 
 ## The next experiment
 
-The website can become the accessible reader across macOS, Linux and Windows. A future client-side importer would validate a chosen package entirely on the person's device before showing its PDF and context. Desktop readers would add native drag-out, offline file opening and file associations.
+The website provides a local reader across desktop platforms. Future work can broaden the accepted profiles and accessibility of PDF previews. Linux and Windows desktop packages would add native drag-out, offline file opening and file associations.
 
 Future collaboration can add written or spoken responses, with each contribution linked to its input revision and kept distinct from the source. Signatures, transport, live AI participation, revision merging, Carry events and Dear Elsewhere arrivals require their own experiments and human decisions. None is represented as implemented here.
 
@@ -117,4 +138,4 @@ Future collaboration can add written or spoken responses, with each contribution
 
 The app's drag gesture uses [AppKit dragging sessions](https://developer.apple.com/documentation/appkit/nsview/begindraggingsession(with:event:source:)) and displays the original with [PDFKit](https://developer.apple.com/documentation/pdfkit/pdfview).
 
-[MIT license](LICENSE). The public specimen and generated icon are included with the experiment.
+[MIT license](LICENSE) for the experiment. The public specimen and generated icon are included. Bundled PDF.js retains its [Apache 2.0 license](THIRD_PARTY.md).

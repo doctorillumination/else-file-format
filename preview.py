@@ -21,7 +21,12 @@ resources = {
     '/original.pdf': (pdf, 'application/pdf', model['filename']),
     '/context.md': (ai_context(model).encode(), 'text/markdown; charset=utf-8', 'context.md'),
     '/ElseIcon.png': ((ROOT / 'assets/ElseIcon.png').read_bytes(), 'image/png', None),
-    '/One-file-two-readings.else': ((ROOT / 'specimen/One-file-two-readings.else').read_bytes(), 'application/x-cyberdelic-else-experiment', 'One-file-two-readings.else')
+    '/One-file-two-readings.else': ((ROOT / 'specimen/One-file-two-readings.else').read_bytes(), 'application/x-cyberdelic-else-experiment', 'One-file-two-readings.else'),
+    '/reader.mjs': ((ROOT / 'web/reader.mjs').read_bytes(), 'text/javascript; charset=utf-8', None),
+    '/format.mjs': ((ROOT / 'web/format.mjs').read_bytes(), 'text/javascript; charset=utf-8', None),
+    '/preview.mjs': ((ROOT / 'web/preview.mjs').read_bytes(), 'text/javascript; charset=utf-8', None),
+    '/vendor/pdf.mjs': ((ROOT / 'web/vendor/pdf.mjs').read_bytes(), 'text/javascript; charset=utf-8', None),
+    '/vendor/pdf.worker.mjs': ((ROOT / 'web/vendor/pdf.worker.mjs').read_bytes(), 'text/javascript; charset=utf-8', None)
 }
 
 

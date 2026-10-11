@@ -14,7 +14,7 @@ blobs/sha256/<sha256>
 integrity/files.json
 ```
 
-All included entries except `integrity/files.json` occur in its `files` dictionary, each with exact `sha256` and integer `bytes`. The index has no self-hash. Record and blob paths independently match the hashes of their raw bytes. Both readers reject unselected records and blobs, duplicate keys and entries, missing references, unsafe paths, symlinks, unexpected capabilities and unsupported signatures.
+All included entries except `integrity/files.json` occur in its `files` dictionary, each with exact `sha256` and integer `bytes`. The index has no self-hash. Record and blob paths independently match the hashes of their raw bytes. All three readers reject unselected records and blobs, duplicate keys and entries, missing references, unsafe paths, symlinks, unexpected capabilities and unsupported signatures.
 
 Limits: 64 MiB archive, 32 entries, 12 MiB per entry, 256 KiB per JSON document, JSON depth 64, nonempty bounded text. This slice permits stored entries only, no ZIP comments, extra fields, descriptors, ZIP64, encryption, trailing content or overlapping entries. It uses deliberately narrower entry and feature limits than the general proposal. Local headers must agree with the central directory and entry CRC checks must pass.
 
@@ -38,7 +38,11 @@ Fields: `type` (context), `title`, `target` (the exact material record digest), 
 
 The Swift reader independently parses stored ZIP bytes, rejects duplicate JSON members, checks CRC and SHA-256, validates the graph and presents the PDF in a native window. The Python reader independently uses its standard-library ZIP parser with additional structural constraints, duplicate-key rejection, CRC and SHA-256 verification and graph validation. It produces a self-contained browser report.
 
-Both generate the same selected Markdown context from validated records. The context identifies source words, contributors, generator, input and target digests, demonstration status, included scope and evidence limits. It is task data and cannot authorize tools or further access. It is generated outside the package, never trusted as an embedded authoritative summary.
+The website's JavaScript reader independently parses the stored ZIP, rejects duplicate JSON members including escaped duplicate names, checks CRC and Web Crypto SHA-256, and validates the same selected graph. A file is read through the browser's local File API; no upload endpoint is used. The shared malformed fixtures and a changed Unicode specimen are checked against all three implementations.
+
+All three generate the same selected Markdown context from validated records. The context identifies source words, contributors, generator, input and target digests, demonstration status, included scope and evidence limits. It is task data and cannot authorize tools or further access. It is generated outside the package, never trusted as an embedded authoritative summary.
+
+The website renders imported text with DOM text nodes, and draws PDF bytes using a bundled PDF.js worker with no active document scripts, links or forms. PDF and context downloads use in-memory blob URLs. Browser networking for application connections is disabled by Content Security Policy. Automated browser tests open and export a changed package while offline and observe zero HTTP requests during local use. The file view is discarded on reload; no persistent browser storage is used.
 
 ## Ordinary extraction
 

@@ -2,6 +2,7 @@
 """Cross-reader checks plus malformed and privacy-boundary fixtures."""
 import hashlib
 import json
+import os
 from pathlib import Path
 import struct
 import subprocess
@@ -12,11 +13,16 @@ import reader
 ROOT = Path(__file__).resolve().parent
 SAMPLE = ROOT / 'specimen/One-file-two-readings.else'
 SWIFT = ROOT / 'output/Else Experiment.app/Contents/MacOS/ElseExperiment'
+NODE = os.environ.get('ELSE_NODE', 'node')
 checks = []
 
 
 def run(*args):
     return subprocess.run([str(SWIFT), *map(str, args)], capture_output=True)
+
+
+def browser(*args):
+    return subprocess.run([NODE, str(ROOT / 'web/check.mjs'), *map(str, args)], capture_output=True)
 
 
 def encode(obj):
@@ -67,7 +73,9 @@ def bad(name, entries, folder, **options):
     native = run('--inspect', path)
     assert native.returncode != 0, 'Swift accepted ' + name
     assert not native.stdout, 'Swift emitted a valid model for ' + name
-    checks.append(name + ': both readers reject')
+    js = browser('--inspect', path)
+    assert js.returncode != 0 and not js.stdout, 'Browser accepted ' + name
+    checks.append(name + ': all three readers reject')
     return path
 
 
@@ -76,10 +84,14 @@ def main():
     swift = run('--inspect', SAMPLE)
     assert swift.returncode == 0, swift.stderr.decode()
     assert json.loads(swift.stdout) == model, 'Reader model mismatch'
-    checks.append('Both readers independently recover identical material, attribution, interpretations and evidence')
+    js = browser('--inspect', SAMPLE)
+    assert js.returncode == 0 and json.loads(js.stdout) == model, js.stderr.decode()
+    checks.append('All three readers independently recover identical material, attribution, interpretations and evidence')
     context = run('--context', SAMPLE)
     assert context.returncode == 0 and context.stdout.decode() == reader.ai_context(model), 'AI view mismatch'
-    checks.append('Both readers independently generate identical AI-readable context')
+    js_context = browser('--context', SAMPLE)
+    assert js_context.returncode == 0 and js_context.stdout.decode() == reader.ai_context(model), 'Browser AI view mismatch'
+    checks.append('All three readers independently generate identical AI-readable context')
     bundled_report = SWIFT.parent.parent / 'Resources/Inspection-reader.html'
     assert bundled_report.read_text(encoding='utf-8') == reader.browser_report(model, pdf)
     checks.append('Bundled offline inspection report matches the independent reader and needs no installed Python for the default specimen')
@@ -94,12 +106,15 @@ def main():
     with tempfile.TemporaryDirectory(prefix='else-specimen-tests-') as folder_name:
         folder = Path(folder_name)
         before = reader.digest(SAMPLE.read_bytes())
-        for label in ('python', 'swift'):
+        for label in ('python', 'swift', 'browser'):
             output = folder / (label + '.pdf')
             if label == 'python':
                 reader.write_new(output, pdf)
-            else:
+            elif label == 'swift':
                 response = run('--extract', SAMPLE, output)
+                assert response.returncode == 0, response.stderr.decode()
+            else:
+                response = browser('--extract', SAMPLE, output)
                 assert response.returncode == 0, response.stderr.decode()
             assert output.read_bytes() == pdf
             assert reader.digest(output.read_bytes()) == model['pdfSHA']
@@ -110,8 +125,12 @@ def main():
         output.write_bytes(b'External edited copy')
         response = run('--extract', SAMPLE, output)
         assert response.returncode != 0 and output.read_bytes() == b'External edited copy'
+        output = folder / 'browser.pdf'
+        output.write_bytes(b'External edited copy')
+        response = browser('--extract', SAMPLE, output)
+        assert response.returncode != 0 and output.read_bytes() == b'External edited copy'
         assert reader.digest(SAMPLE.read_bytes()) == before
-        checks.append('Exact PDF extraction in both readers, context-free payload, no overwrite and unchanged package after external edit')
+        checks.append('Exact PDF extraction in all three readers, context-free payload, no overwrite and unchanged package after external edit')
         m = json.loads(original['manifest.json'])
         altered = dict(original)
         pdf_name = 'blobs/sha256/' + model['pdfSHA']
@@ -138,6 +157,12 @@ def main():
         duplicate_json = dict(original)
         duplicate_json['manifest.json'] = original['manifest.json'].replace(b'{', b'{"format":"other",', 1)
         bad('duplicate-json-key', indexed(duplicate_json), folder)
+        escaped_duplicate = dict(original)
+        escaped_duplicate['manifest.json'] = original['manifest.json'].replace(b'{', b'{"\\u0066ormat":"other",', 1)
+        bad('escaped-duplicate-json-key', indexed(escaped_duplicate), folder)
+        bom = dict(original)
+        bom['manifest.json'] = b'\xef\xbb\xbf' + original['manifest.json']
+        bad('json-with-unexpected-bom', indexed(bom), folder)
         capabilities = dict(original)
         capabilities['manifest.json'] = encode({**m, 'requiredCapabilities': ['unknown']})
         bad('unknown-required-capability', indexed(capabilities), folder)
@@ -169,7 +194,16 @@ def main():
         else:
             raise AssertionError('Python accepted truncated archive')
         assert run('--inspect', truncated).returncode != 0
-        checks.append('truncated archive: both readers reject')
+        assert browser('--inspect', truncated).returncode != 0
+        checks.append('truncated archive: all three readers reject')
+        from browser_fixtures import write_fixtures
+        changed = write_fixtures(folder / 'browser-fixtures')
+        changed_model, changed_pdf = reader.read_package(changed)
+        for response in [run('--inspect', changed), browser('--inspect', changed)]:
+            assert response.returncode == 0 and json.loads(response.stdout) == changed_model
+        assert browser('--context', changed).stdout.decode() == reader.ai_context(changed_model)
+        assert changed_pdf == pdf and 'LOCAL_CONTEXT_SENTINEL' in reader.ai_context(changed_model)
+        checks.append('Changed attributed Unicode readings recover identically without changing the original PDF')
         assert 'SYNTHETIC_PRIVATE_NOTE_DO_NOT_EXPORT' not in reader.ai_context(model)
         assert all(b'SYNTHETIC_PRIVATE_NOTE_DO_NOT_EXPORT' not in value for value in original.values())
     output = ROOT / 'output'

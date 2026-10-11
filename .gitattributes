@@ -1,3 +1,5 @@
 *.pdf binary
 *.else binary
 *.png binary
+web/vendor/* linguist-vendored
+docs/vendor/* linguist-vendored
