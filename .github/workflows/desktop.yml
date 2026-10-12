@@ -8,12 +8,22 @@ on:
   pull_request:
     paths: ['desktop/**', 'web/**', 'assets/**', 'specimen/**', 'build_site.py', 'reader.py', 'browser_fixtures.py', 'test_experiment.py', 'package*.json', '.github/workflows/desktop.yml']
   workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Optional completed source build to publish without rebuilding'
+        required: false
+        type: string
+      release_tag:
+        description: 'Existing tag matching that source build'
+        required: false
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   desktop:
+    if: github.event_name != 'workflow_dispatch' || inputs.run_id == ''
     strategy:
       fail-fast: false
       matrix:
@@ -89,6 +99,7 @@ jobs:
           retention-days: 7
 
   mac-intel:
+    if: github.event_name != 'workflow_dispatch' || inputs.run_id == ''
     needs: desktop
     runs-on: macos-15-intel
     steps:
@@ -115,19 +126,32 @@ jobs:
         run: node desktop/test_desktop.cjs
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: >-
+      always() &&
+      ((startsWith(github.ref, 'refs/tags/v') && needs.desktop.result == 'success' && needs.mac-intel.result == 'success') ||
+       (github.event_name == 'workflow_dispatch' && inputs.run_id != '' && github.ref == 'refs/heads/main'))
     needs: [desktop, mac-intel]
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Verify the source build and immutable release tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ELSE_SOURCE_RUN: ${{ inputs.run_id || github.run_id }}
+          ELSE_RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+        run: python3 desktop/verify_release_run.py
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           pattern: desktop-*
           merge-multiple: false
           path: output/release-downloads
+          run-id: ${{ inputs.run_id || github.run_id }}
+          github-token: ${{ github.token }}
       - name: Publish tested platform downloads and fingerprints
         env:
           GH_TOKEN: ${{ github.token }}
+          ELSE_RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
         run: python3 desktop/publish_release.py
