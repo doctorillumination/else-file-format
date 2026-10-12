@@ -73,7 +73,7 @@ def filename(value):
     return value
 
 
-def read_package(path):
+def read_archive(path, maximum_entries=32):
     path = Path(path)
     need(path.stat().st_size <= MAX_ARCHIVE, 'Archive exceeds limit')
     raw = path.read_bytes()
@@ -81,7 +81,7 @@ def read_package(path):
     # This specimen forbids comments, extra fields, descriptors and compression.
     eocd = struct.unpack('<IHHHHIIH', raw[-22:])
     need(eocd[0] == 0x06054B50 and eocd[1:3] == (0, 0) and eocd[-1] == 0, 'Unsupported ZIP trailer')
-    need(eocd[3] == eocd[4] and 1 <= eocd[4] <= 32, 'Invalid ZIP entry count')
+    need(eocd[3] == eocd[4] and 1 <= eocd[4] <= maximum_entries, 'Invalid ZIP entry count')
     need(eocd[5] + eocd[6] == len(raw) - 22, 'Invalid ZIP directory')
     entries = {}
     with zipfile.ZipFile(io.BytesIO(raw)) as archive:
@@ -96,7 +96,7 @@ def read_package(path):
             need(not info.extra and not info.comment and info.create_version < 45 and info.extract_version < 45, 'Unsupported ZIP features')
             need(not stat.S_ISLNK(info.external_attr >> 16), 'ZIP symlink')
             need(info.file_size == info.compress_size and info.file_size <= MAX_BLOB, 'Invalid entry size')
-            need(name in ('mimetype', 'manifest.json', 'integrity/files.json') or re.fullmatch(r'(records/[0-9a-f]{64}\.json|blobs/sha256/[0-9a-f]{64})', name), 'Unsafe or unsupported archive path')
+            need(name in ('mimetype', 'manifest.json', 'integrity/files.json') or re.fullmatch(r'(records/[0-9a-f]{64}\.json|blobs/sha256/[0-9a-f]{64})', name) or (maximum_entries == 128 and re.fullmatch(r'(materials|contexts|editions|proofs)/[0-9a-f]{64}\.json', name)), 'Unsafe or unsupported archive path')
             local = struct.unpack_from('<IHHHHHIIIHH', raw, offset)
             need(local[0] == 0x04034B50 and local[2] == info.flag_bits and local[3] == 0, 'Local ZIP header mismatch')
             need(local[6:9] == (info.CRC, info.compress_size, info.file_size) and local[10] == 0, 'Local ZIP size mismatch')
@@ -106,6 +106,11 @@ def read_package(path):
             need(offset <= eocd[6], 'ZIP entry crosses directory')
             entries[name] = archive.read(info)  # zipfile also verifies CRC.
         need(offset == eocd[6], 'Unexpected bytes before ZIP directory')
+    return entries
+
+
+def read_package(path):
+    entries = read_archive(path)
     need(entries.get('mimetype') == MIME, 'Not this experimental format')
     need('integrity/files.json' in entries and 'manifest.json' in entries, 'Missing metadata')
     index = strict_json(entries['integrity/files.json'])

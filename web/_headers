@@ -1,7 +1,7 @@
 /*
-  Content-Security-Policy: default-src 'none'; style-src 'self'; script-src 'self'; worker-src 'self'; connect-src 'none'; frame-src 'none'; object-src 'none'; img-src 'self' data:; font-src blob: data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
-  Referrer-Policy: no-referrer
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   Cache-Control: no-cache
+/source-viewer.html
+  Referrer-Policy: strict-origin-when-cross-origin

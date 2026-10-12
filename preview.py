@@ -30,6 +30,8 @@ resources = {
     '/vendor/pdf.mjs': ((ROOT / 'web/vendor/pdf.mjs').read_bytes(), 'text/javascript; charset=utf-8', None),
     '/vendor/pdf.worker.mjs': ((ROOT / 'web/vendor/pdf.worker.mjs').read_bytes(), 'text/javascript; charset=utf-8', None)
 }
+for name in ['mixed.html', 'mixed.css', 'mixed.mjs', 'mixed-format.mjs', 'source-viewer.html', 'source-viewer.mjs']:
+    resources['/' + name] = ((ROOT / 'web' / name).read_bytes(), 'text/html' if name.endswith('.html') else 'text/css' if name.endswith('.css') else 'text/javascript', None)
 
 
 class Preview(BaseHTTPRequestHandler):

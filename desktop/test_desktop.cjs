@@ -63,7 +63,7 @@ async function untilFile(filename) {
     });
     assert.deepEqual(security, { sandbox: true, contextIsolation: true, nodeIntegration: false });
     assert.deepEqual(await page.evaluate(() => [typeof require, typeof process, Object.keys(window.elseDesktop).sort()]),
-      ['undefined', 'undefined', ['chooseFile', 'confirmDiscard', 'dragPDF', 'onAction', 'onFile', 'pendingFile', 'saveFile']]);
+      ['undefined', 'undefined', ['chooseFile', 'confirmDiscard', 'dragPDF', 'onAction', 'onFile', 'pendingFile', 'saveFile', 'viewSource']]);
     checks.push('The renderer is sandboxed and isolated, with no Node access or general filesystem bridge');
 
     assert.equal(assetName('app://else/preload.cjs', new Set(['index.html'])), null);

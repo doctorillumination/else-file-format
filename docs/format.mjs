@@ -15,7 +15,7 @@ export async function digest(bytes) {
     (value) => value.toString(16).padStart(2, '0')).join('');
 }
 
-function strictJSON(bytes) {
+export function strictJSON(bytes) {
   need(bytes.length <= 256 * 1024, 'JSON exceeds the size limit.');
   const input = decoder.decode(bytes);
   let position = 0;
@@ -95,7 +95,7 @@ export function crc32(bytes) {
   return (value ^ 0xffffffff) >>> 0;
 }
 
-function storedZIP(bytes) {
+export function storedZIP(bytes, maximumEntries = 32) {
   need(bytes.length >= 22 && bytes.length <= MAX_ARCHIVE, 'Truncated or oversized .else file.');
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const u16 = (offset) => view.getUint16(offset, true);
@@ -106,7 +106,7 @@ function storedZIP(bytes) {
   const end = bytes.length - 22;
   need(u32(end) === 0x06054b50 && u16(end + 4) === 0 && u16(end + 6) === 0 && u16(end + 20) === 0, 'Unsupported ZIP trailer.');
   const count = u16(end + 10);
-  need(count >= 1 && count <= 32 && count === u16(end + 8), 'Invalid ZIP entry count.');
+  need(count >= 1 && count <= maximumEntries && count === u16(end + 8), 'Invalid ZIP entry count.');
   const directorySize = u32(end + 12);
   const directory = u32(end + 16);
   need(directory + directorySize === end, 'Invalid ZIP directory.');
@@ -125,8 +125,9 @@ function storedZIP(bytes) {
     need(size === u32(central + 20) && size <= MAX_ENTRY, 'Invalid ZIP entry size.');
     bounds(central + 46, nameSize, end);
     const name = decoder.decode(bytes.subarray(central + 46, central + 46 + nameSize));
+    need(!/[\x00-\x1f]/.test(name), 'Unsafe ZIP name.');
     need(!entries.has(name), 'Duplicate ZIP entry.');
-    need(['mimetype', 'manifest.json', 'integrity/files.json'].includes(name) || /^(?:records\/[0-9a-f]{64}\.json|blobs\/sha256\/[0-9a-f]{64})$/.test(name), 'Unsafe or unsupported archive path.');
+    need(['mimetype', 'manifest.json', 'integrity/files.json'].includes(name) || /^(?:records\/[0-9a-f]{64}\.json|blobs\/sha256\/[0-9a-f]{64})$/.test(name) || (maximumEntries === 128 && /^(?:materials|contexts|editions|proofs)\/[0-9a-f]{64}\.json$/.test(name)), 'Unsafe or unsupported archive path.');
     need(u32(central + 42) === local, 'Overlapping or reordered ZIP entries.');
     bounds(local, 30, directory);
     need(u32(local) === 0x04034b50 && u16(local + 4) < 45 && u16(local + 6) === flags && u16(local + 8) === 0, 'Local ZIP header mismatch.');

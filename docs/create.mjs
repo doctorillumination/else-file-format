@@ -16,7 +16,7 @@ export function pdfFilename(name) {
   return name;
 }
 
-function storedZIP(entries) {
+export function storedZIP(entries) {
   const parts = [];
   const directory = [];
   let offset = 0;

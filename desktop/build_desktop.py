@@ -33,7 +33,7 @@ def main():
                         'Saving opens the .else in the reader below. Save a copy to keep your work.')
     html = html.replace('Reloading clears unsaved work.', 'Save a .else copy to keep your work.')
     (DESTINATION / 'index.html').write_text(html, encoding='utf-8')
-    names = ['reader.mjs', 'format.mjs', 'preview.mjs', 'create.mjs', 'site.css']
+    names = ['reader.mjs', 'format.mjs', 'preview.mjs', 'create.mjs', 'site.css', 'mixed.html', 'mixed.css', 'mixed.mjs', 'mixed-format.mjs', 'source-viewer.html', 'source-viewer.mjs']
     for name in names:
         shutil.copyfile(ROOT / 'web' / name, DESTINATION / name)
     (DESTINATION / 'vendor').mkdir(exist_ok=True)

@@ -36,7 +36,7 @@ def main():
     (SITE / model['filename']).write_bytes(pdf)
     shutil.copyfile(ROOT / 'assets/ElseIcon.png', SITE / 'ElseIcon.png')
     shutil.copyfile(ROOT / 'specimen/One-file-two-readings.else', SITE / 'One-file-two-readings.else')
-    for name in ['reader.mjs', 'format.mjs', 'preview.mjs', 'create.mjs', 'site.css']:
+    for name in ['reader.mjs', 'format.mjs', 'preview.mjs', 'create.mjs', 'site.css', 'mixed.html', 'mixed.css', 'mixed.mjs', 'mixed-format.mjs', 'source-viewer.html', 'source-viewer.mjs']:
         shutil.copyfile(ROOT / 'web' / name, SITE / name)
     (SITE / 'vendor').mkdir(exist_ok=True)
     for name in ['pdf.mjs', 'pdf.worker.mjs', 'PDFJS-LICENSE']:

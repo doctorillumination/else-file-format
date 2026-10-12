@@ -53,13 +53,30 @@ jobs:
       - run: npm ci
       - run: npm ci --prefix desktop
       - name: Build the offline authoring application
-        run: python desktop/build_desktop.py
+        run: |
+          python desktop/build_desktop.py
+          python browser_fixtures.py
+          node web/mixed-fixture.mjs
+          python -c "import shutil; shutil.copyfile('specimen/Mixed-signed.else', 'output/mixed-checks/Response.else')"
+          python build_site.py
       - name: Install Linux display dependencies
         if: runner.os == 'Linux'
         run: npx playwright install-deps chromium
       - name: Check desktop creation, editing, exact exports and privacy boundaries
         if: runner.os != 'Linux'
         run: node desktop/test_desktop.cjs
+      - name: Install the mixed-reader browser
+        run: npx playwright install chromium
+      - name: Check mixed browser and desktop exchanges
+        if: runner.os != 'Linux'
+        env:
+          ELSE_BROWSER_ENGINES: chromium
+        run: node web/test_mixed.mjs
+      - name: Check mixed exchanges on Linux
+        if: runner.os == 'Linux'
+        env:
+          ELSE_BROWSER_ENGINES: chromium
+        run: xvfb-run --auto-servernum node web/test_mixed.mjs
       - name: Check Linux desktop authoring
         if: runner.os == 'Linux'
         run: xvfb-run --auto-servernum node desktop/test_desktop.cjs
@@ -117,7 +134,7 @@ jobs:
           path: output/mac-intel
       - name: Extract and verify the universal Mac download
         run: |
-          ditto -xk output/mac-intel/Dotelse-0.2.0-macOS-universal.zip output/mac-intel
+          ditto -xk output/mac-intel/Dotelse-0.3.0-macOS-universal.zip output/mac-intel
           codesign --verify --deep --strict output/mac-intel/Dotelse.app
           python3 -c "import subprocess; assert set(subprocess.check_output(['xcrun', 'lipo', '-archs', 'output/mac-intel/Dotelse.app/Contents/MacOS/Dotelse'], text=True).split()) == {'arm64', 'x86_64'}"
       - name: Check the universal application on an Intel Mac

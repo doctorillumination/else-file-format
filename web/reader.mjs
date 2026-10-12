@@ -231,6 +231,14 @@ async function openBytes(bytes, name, demo = false, token = ++revision, saving =
   errorMessage.hidden = true;
   status.textContent = 'Checking ' + name + ' on this device…';
   try {
+    const { isMixed } = await import('./mixed-format.mjs');
+    if (isMixed(new Uint8Array(bytes))) {
+      if (!await mayReplaceDraft()) return false;
+      clearDraft();
+      const { launchMixed } = await import('./mixed.mjs');
+      await launchMixed(bytes, name);
+      return true;
+    }
     const result = await readPackage(bytes);
     if (token !== revision) return;
     const replace = saving || await mayReplaceDraft();
@@ -434,6 +442,7 @@ sampleButton.addEventListener('click', () => void openBytes(bytes, 'One-file-two
 setBusy(false);
 
 async function receiveNativeFile(value) {
+  if (document.getElementById('mixed-app')) return;
   if (value.error) { errorMessage.textContent = value.error; errorMessage.hidden = false; return; }
   await openFiles([new File([value.bytes], value.name)]);
 }
@@ -441,6 +450,7 @@ async function receiveNativeFile(value) {
 if (desktop) {
   desktop.onFile((value) => void receiveNativeFile(value));
   desktop.onAction((action) => {
+    if (document.getElementById('mixed-app')) return;
     if (action === 'save') { if (draft) form.requestSubmit(); else if (current) void nativeExport(packageLink); }
     else if (action === 'edit') void editCurrent();
   });

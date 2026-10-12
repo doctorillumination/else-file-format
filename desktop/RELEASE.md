@@ -1,14 +1,9 @@
-The desktop app now opens, creates and edits .else files locally on macOS, Windows and Linux. Start with one PDF, declare its source, and add two attributed interpretations. Save an edited copy, extract the unchanged original PDF, or save the selected AI-readable context as Markdown.
+The reader now composes a mixed .else: an unchanged PDF, a social reference, a selected YouTube passage and written or spoken context. Open it on the website, desktop or Carry for iPhone. Add an interpretation, preserve earlier editions and extract originals or selected AI-readable Markdown.
 
-The website's format and authoring engine are bundled inside the app. No account, upload, model call, web connection or background update is needed. Native open and save dialogs are used. Cancelled saves and unsaved edits are protected before closing. A .else file association and an original-PDF drag control are included.
+Carry signs reviewed editions and responses through its device Keychain. Browser and desktop verify public proofs, preserve exact signed records and create unsigned descendants when editing. Keys stay on the phone; files remain unencrypted.
 
-Downloads:
+Local reading, creation, playback and extraction need no upload or account. Deliberate live viewing uses a separate source context. Providers control whether a post or video can be embedded. Saved references and context survive unavailable sources.
 
-- macOS ZIP: universal application for Apple silicon and Intel Macs. Extract it and move Dotelse.app to Applications.
-- Windows x64: per-user installer with an optional installation location.
-- Linux x64 AppImage: portable download, requiring an executable permission and a system with AppImage/FUSE support.
-- Linux x64 Debian package: installation through the distribution's normal package manager.
+The existing one-PDF/two-readings profile remains supported. The mixed profile is experimental and preserves Dear Elsewhere and Carry's separate delivery and shared-document contracts.
 
-These are experimental distributions. The Mac application is locally signed and is not notarized by Apple. The Windows installer is not signed with a publisher certificate. Normal platform checks may flag these downloads. Source builds and the local website remain available. SHA256SUMS.txt records the exact release bytes; it is not an identity signature.
-
-The supported file remains the unsigned `two-readings/0.1-experimental` profile, with one PDF and two interpretations. PDF creation supports 12 MiB, 200 pages and 65,536 characters of selectable text, without OCR. Edits preserve the PDF and text derivative and record the earlier archive fingerprint as a declared reference. Signatures, revision merging, live collaboration and Dear Elsewhere or Carry integration remain separate work.
+Downloads include universal macOS, Windows x64, Linux AppImage and Debian packages. macOS is locally signed and not Apple-notarized; Windows has no publisher certificate. SHA256SUMS.txt identifies release bytes. See MIXED_FORMAT.md and desktop/MIXED_VERIFICATION.md for the contract and test scope.

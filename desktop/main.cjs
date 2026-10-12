@@ -7,7 +7,7 @@ const { pathToFileURL } = require('node:url');
 const { ORIGIN, HOME, POLICY, assetName, externalLink, openedFile, exportedBytes, readFile } = require('./boundary.cjs');
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
-if (!app.isPackaged && process.env.ELSE_TEST_USER_DATA) app.setPath('userData', process.env.ELSE_TEST_USER_DATA);
+if (process.env.ELSE_TEST_USER_DATA) app.setPath('userData', process.env.ELSE_TEST_USER_DATA);
 app.setName('Dotelse');
 let window;
 let pending = null;
@@ -16,7 +16,7 @@ let exportDirectory = null;
 const assets = path.join(__dirname, 'app');
 
 function trusted(event) {
-  if (!window || event.sender !== window.webContents || event.senderFrame !== window.webContents.mainFrame || event.senderFrame.url.split('#')[0] !== HOME) throw new Error('Unavailable outside the .else reader.');
+  if (!window || event.sender !== window.webContents || event.senderFrame !== window.webContents.mainFrame || ![HOME, ORIGIN + '/mixed.html'].includes(event.senderFrame.url.split('#')[0])) throw new Error('Unavailable outside the .else reader.');
 }
 
 async function openFile(filename) {
@@ -40,11 +40,12 @@ async function chooseFile(pdfOnly = false) {
 async function saveFile(value) {
   const bytes = exportedBytes(value);
   if (value.kind === 'else') {
-    const { readPackage } = await import(pathToFileURL(path.join(assets, 'format.mjs')).href);
-    await readPackage(new Uint8Array(bytes));
+    const { readMixed, isMixed } = await import(pathToFileURL(path.join(assets, 'mixed-format.mjs')).href);
+    if (isMixed(new Uint8Array(bytes))) await readMixed(new Uint8Array(bytes));
+    else { const { readPackage } = await import(pathToFileURL(path.join(assets, 'format.mjs')).href); await readPackage(new Uint8Array(bytes)); }
   }
   const result = await dialog.showSaveDialog(window, { title: value.kind === 'else' ? 'Save .else copy' : value.kind === 'pdf' ? 'Save original PDF' : 'Save AI-readable context',
-    defaultPath: value.name, filters: [{ name: value.kind === 'md' ? 'Markdown' : value.kind.toUpperCase(), extensions: [value.kind] }] });
+    defaultPath: value.name, filters: [{ name: value.kind === 'md' ? 'Markdown' : value.kind.toUpperCase(), extensions: [value.kind === 'audio' ? path.extname(value.name).slice(1) : value.kind] }] });
   if (result.canceled || !result.filePath) return { saved: false };
   await writeFile(result.filePath, bytes);
   return { saved: true, name: path.basename(result.filePath) };
@@ -66,7 +67,7 @@ async function createWindow() {
   window = new BrowserWindow({ width: 1220, height: 860, minWidth: 640, minHeight: 540, title: '.else', backgroundColor: '#eeece4', show: false,
     icon: path.join(assets, 'ElseIcon.png'), webPreferences: { preload: path.join(__dirname, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, partition: 'else-local' } });
   window.webContents.on('will-navigate', (event, address) => {
-    if (address.split('#')[0] === HOME) return;
+    if ([HOME, ORIGIN + '/mixed.html'].includes(address.split('#')[0])) return;
     event.preventDefault(); projectLink(address);
   });
   window.webContents.setWindowOpenHandler(({ url }) => { projectLink(url); return { action: 'deny' }; });
@@ -78,7 +79,8 @@ async function createWindow() {
   });
   window.once('ready-to-show', () => window.show());
   window.on('closed', () => { window = null; rendererReady = false; });
-  await window.loadURL(HOME);
+  try { await window.loadURL(HOME); }
+  catch (error) { if (error.code !== 'ERR_ABORTED' && error.errno !== -3) throw error; }
 }
 
 const locked = app.requestSingleInstanceLock();
@@ -118,6 +120,26 @@ else {
       return result.response === 1;
     });
     ipcMain.handle('else:save', async (event, value) => { trusted(event); return saveFile(value); });
+    ipcMain.handle('else:source', async (event, value) => {
+      trusted(event);
+      const target = new URL(value.url);
+      if (target.protocol !== 'https:' || target.username || target.password || !['youtube', 'x', 'reference'].includes(value.kind)) throw new Error('Unsupported live source.');
+      const remote = session.fromPartition('else-source-' + require('node:crypto').randomUUID());
+      const allowedSource = new Set(['source-viewer.html', 'source-viewer.mjs', 'mixed.css']);
+      remote.protocol.handle('app', async request => {
+        const address = new URL(request.url); address.search = '';
+        const name = assetName(address.href, allowedSource);
+        if (!name) return new Response('Not found', { status: 404 });
+        return new Response(await readFile(path.join(assets, name)), { headers: { 'Content-Type': name.endsWith('.html') ? 'text/html' : name.endsWith('.mjs') ? 'text/javascript' : 'text/css', 'Referrer-Policy': 'strict-origin-when-cross-origin' } });
+      });
+      remote.webRequest.onBeforeSendHeaders((details, callback) => { const headers = { ...details.requestHeaders }; if (/^https:\/\/(?:www\.)?youtube(?:-nocookie)?\.com\//.test(details.url)) headers.Referer = 'https://app.dotelse.desktop/'; callback({ requestHeaders: headers }); });
+      remote.setPermissionRequestHandler((_c, _p, cb) => cb(false)); remote.setPermissionCheckHandler(() => false); remote.on('will-download', event => event.preventDefault());
+      const source = new BrowserWindow({ parent: window, width: 860, height: 700, title: 'Live source', webPreferences: { session: remote, nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true } });
+      source.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+      source.webContents.on('will-navigate', (e, address) => { try { const u = new URL(address); if (!(u.protocol === 'https:' && !u.username && !u.password) && !address.startsWith(ORIGIN + '/source-viewer.html')) e.preventDefault(); } catch { e.preventDefault(); } });
+      await source.loadURL(ORIGIN + '/source-viewer.html?' + new URLSearchParams({ kind: value.kind, url: target.href, start: value.start ?? 0, end: value.end ?? 0 }));
+      return true;
+    });
     ipcMain.handle('else:pending', (event) => { trusted(event); rendererReady = true; const value = pending; pending = null; return value; });
     ipcMain.handle('else:drag-pdf', async (event, value) => {
       trusted(event);

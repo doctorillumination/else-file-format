@@ -2,6 +2,12 @@
 
 # .else
 
+The mixed-material experiment now connects the website, desktop app and Carry for iPhone. Combine a PDF, a social reference, a YouTube passage and written or spoken context. Edit a new edition, keep earlier contributions, extract originals and save selected AI-readable Markdown. Carry signs reviewed editions and responses through its device Keychain; web and desktop verify those public proofs and create unsigned descendants when editing.
+
+Read the [mixed contract](MIXED_FORMAT.md) and [exchange verification](desktop/MIXED_VERIFICATION.md). Files stay local until deliberately exported or shared. Live viewing contacts the selected provider in a separate source context. Files remain unencrypted, and source claims and human identities remain distinguishable from signature validity.
+
+The earlier one-PDF/two-readings experiment described below remains supported.
+
 A file, with room for its context.
 
 `.else` is an experiment in a native Cyberdelic OS file format: ordinary material can travel with attributed interpretations, source information and selected context. The material keeps its own life. A PDF can leave the package again as an ordinary, unchanged PDF.

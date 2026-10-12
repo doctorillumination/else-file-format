@@ -3,13 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'; worker-src 'self'; connect-src 'none'; frame-src 'none'; object-src 'none'; img-src 'self' data:; font-src blob: data:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'; worker-src 'self'; connect-src 'none'; frame-src 'none'; object-src 'none'; img-src 'self' data:; media-src blob:; font-src blob: data:; base-uri 'none'; form-action 'none'">
 <title>.else, a file with room for context</title>
 <meta name="description" content="Open, create and edit .else files on your device. Keep an original PDF beside two interpretations, source information and AI-readable context. Nothing is uploaded.">
 <meta name="theme-color" content="#526a4b">
 <link rel="icon" href="ElseIcon.png" type="image/png">
 <link rel="canonical" href="https://dotelse.app/">
 <link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="mixed.css">
 </head>
 <body data-reader-state="empty">
 <a class="skip-link" href="#drop-zone">Skip to the reader</a>
@@ -20,6 +21,7 @@
 <div class="opener-heading"><h2 id="open-heading">Drop a .else or PDF.</h2><span class="local-label">On your device</span></div>
 <p>Open a .else to read or edit it. Start with a PDF to create one. Nothing is uploaded.</p>
 <div class="opener-actions"><button id="choose-file" type="button" disabled>Choose PDF or .else file</button><button id="try-sample" class="secondary" type="button" disabled>Try a sample</button><button id="close-file" class="text-button" type="button" hidden>Close file</button></div>
+<p><a class="secondary" href="mixed.html">Compose a mixed .else: PDF, post, passage and voice</a></p>
 <input id="package-file" type="file" accept=".else,.pdf,application/pdf" aria-label="Choose PDF or .else file" hidden>
 <p class="open-status" id="open-status" role="status" aria-live="polite" aria-atomic="true">Your files stay in this tab. Save a copy to keep your work.</p>
 <p class="open-error" id="open-error" role="alert" hidden></p>

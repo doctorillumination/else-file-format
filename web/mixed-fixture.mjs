@@ -1,0 +1,17 @@
+import { include, newEdition } from './mixed-format.mjs';
+import { readFile, mkdir, writeFile } from 'node:fs/promises';
+const root = new URL('../output/mixed-checks/', import.meta.url); await mkdir(root, { recursive: true });
+const pdf = new Uint8Array(await readFile(new URL('../output/browser-fixtures/Two-pages.pdf', import.meta.url)));
+const rate = 16000, samples = rate / 2, wav = new Uint8Array(44 + samples * 2), v = new DataView(wav.buffer), enc = new TextEncoder();
+for (const [offset, word] of [[0, 'RIFF'], [8, 'WAVE'], [12, 'fmt '], [36, 'data']]) wav.set(enc.encode(word), offset);
+v.setUint32(4, wav.length - 8, true); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); v.setUint32(40, samples * 2, true);
+for (let i = 0; i < samples; i++) v.setInt16(44 + 2 * i, Math.round(Math.sin(i / rate * Math.PI * 880) * 1200), true);
+await writeFile(new URL('Voice.wav', root), wav);
+const files = new Map(), text = async s => include(files, 'blobs', enc.encode(s));
+const materials = [];
+materials.push(await include(files, 'materials', { kind: 'pdf', title: 'Synthetic PDF', creator: 'Synthetic fixture', url: null, filename: 'Two-pages.pdf', mime: 'application/pdf', blob: await include(files, 'blobs', pdf), excerpt: await text('SYNTHETIC_SECOND_PAGE'), method: 'Synthetic fixture extraction, independently checked by browser creation tests', start: null, end: null }));
+materials.push(await include(files, 'materials', { kind: 'social', title: 'A referenced post', creator: 'Declared source account', url: 'https://x.com/jack/status/20', filename: null, mime: null, blob: null, excerpt: await text('A synthetic excerpt, not a quote attributed to this account.'), method: 'Synthetic test text; not source evidence', start: null, end: null }));
+materials.push(await include(files, 'materials', { kind: 'youtube', title: 'A referenced video passage', creator: 'Declared channel', url: 'https://www.youtube.com/watch?v=M7lc1UVf-VE', filename: null, mime: null, blob: null, excerpt: null, method: null, start: 2, end: 8 }));
+const c = await include(files, 'contexts', { author: { kind: 'human', name: 'Synthetic contributor', generator: null }, material: null, base: null, text: await text('One object, different ways of seeing. <script>never execute</script>'), audio: await include(files, 'blobs', wav), filename: 'Voice.wav', mime: 'audio/wav', transcript: await text('[Synthetic tone fixture, no spoken words]'), transcriptMethod: 'Synthetic fixture description', status: 'declared' });
+await writeFile(new URL('Input.else', root), await newEdition(null, { title: 'Mixed exchange specimen', editor: 'Synthetic contributor', materials, contexts: [c], parents: [], files }));
+console.log('Created bounded mixed fixtures with exact PDF and PCM WAV bytes.');

@@ -1,7 +1,7 @@
 import { getDocument, GlobalWorkerOptions, PDFWorker, AnnotationMode } from './vendor/pdf.mjs';
 
 GlobalWorkerOptions.workerSrc = new URL('./vendor/pdf.worker.mjs', import.meta.url).href;
-const worker = new PDFWorker({ name: 'else-local-preview' });
+export const worker = new PDFWorker({ name: 'else-local-preview' });
 const canvas = document.querySelector('#pdf-canvas');
 const label = document.querySelector('#pdf-page');
 const previous = document.querySelector('#pdf-previous');
@@ -138,5 +138,5 @@ async function turn(delta) {
     if (token === revision) label.textContent = 'This page could not be previewed. The original PDF is still available to save.';
   }
 }
-previous.addEventListener('click', () => void turn(-1));
-next.addEventListener('click', () => void turn(1));
+previous?.addEventListener('click', () => void turn(-1));
+next?.addEventListener('click', () => void turn(1));
