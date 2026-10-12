@@ -8,17 +8,17 @@ from reader import ai_context, read_package
 ROOT = Path(__file__).resolve().parent
 SITE = ROOT / 'docs'
 REPOSITORY = 'https://github.com/doctorillumination/else-file-format'
-RELEASE = REPOSITORY + '/releases/download/v0.2.0-experiment/'
+RELEASE = REPOSITORY + '/releases/download/v0.3.0-experiment/'
 
 
 def site_page(model, pdf):
     template = (ROOT / 'web/site.html').read_text(encoding='utf-8')
     replacements = {
         '__REPOSITORY__': REPOSITORY,
-        '__MAC_DOWNLOAD__': RELEASE + 'Dotelse-0.2.0-macOS-universal.zip',
-        '__WINDOWS_DOWNLOAD__': RELEASE + 'Dotelse-0.2.0-Windows-x64-Setup.exe',
-        '__LINUX_DOWNLOAD__': RELEASE + 'Dotelse-0.2.0-Linux-x86_64.AppImage',
-        '__DEBIAN_DOWNLOAD__': RELEASE + 'Dotelse-0.2.0-Linux-amd64.deb',
+        '__MAC_DOWNLOAD__': RELEASE + 'Dotelse-0.3.0-macOS-universal.zip',
+        '__WINDOWS_DOWNLOAD__': RELEASE + 'Dotelse-0.3.0-Windows-x64-Setup.exe',
+        '__LINUX_DOWNLOAD__': RELEASE + 'Dotelse-0.3.0-Linux-x86_64.AppImage',
+        '__DEBIAN_DOWNLOAD__': RELEASE + 'Dotelse-0.3.0-Linux-amd64.deb',
         '__CREATOR__': (ROOT / 'web/creator.html').read_text(encoding='utf-8'),
         '__SAMPLE_PACKAGE__': base64.b64encode((ROOT / 'specimen/One-file-two-readings.else').read_bytes()).decode(),
     }

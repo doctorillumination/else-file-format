@@ -120,6 +120,13 @@ function sourceViewer(a) {
   if (desktop) { need(desktop.viewSource, 'Rebuild this desktop app to enable source viewing.'); return desktop.viewSource({ kind, url: a.url, start: a.start, end: a.end }); }
   const target = new URL('source-viewer.html', location.href); target.hash = new URLSearchParams({ kind, url: a.url, start: a.start ?? 0, end: a.end ?? 0 }); window.open(target.href, '_blank', 'noopener,noreferrer');
 }
+function sourceControl(a) {
+  const title = a.kind === 'youtube' ? 'Play passage online' : 'View source online';
+  if (desktop) return button(title, () => sourceViewer(a));
+  const u = new URL(a.url), kind = a.kind === 'youtube' ? 'youtube' : /^(?:www\.)?(?:x|twitter)\.com$/.test(u.hostname) && /^\/[^/]+\/status\/\d+$/.test(u.pathname) ? 'x' : 'reference';
+  const destination = new URL('source-viewer.html', location.href); destination.hash = new URLSearchParams({ kind, url: a.url, start: a.start ?? 0, end: a.end ?? 0 });
+  const link = el('a', title, 'button'); link.href = destination.href; link.target = '_blank'; link.rel = 'noopener noreferrer'; return link;
+}
 function render() {
   clearURLs(); $('content').replaceChildren(); document.body.dataset.mixedState = 'reading';
   const e = current(); $('content').append(el('h2', e.title));
@@ -133,7 +140,7 @@ function render() {
       const canvas = el('canvas'); canvas.setAttribute('aria-label', 'Original PDF preview'); article.append(canvas); void pdfPreview(model.blob(a.blob), canvas);
       article.append(button('Save original PDF', () => save(model.blob(a.blob), a.filename, 'pdf')));
       if (desktop) { const drag = button('Drag original PDF out', () => {}); drag.draggable = true; drag.ondragstart = ev => { ev.preventDefault(); void desktop.dragPDF({ bytes: model.blob(a.blob), name: a.filename, kind: 'pdf' }); }; article.append(drag); }
-    } else { article.append(el('p', a.url, 'muted')); if (a.kind === 'youtube') article.append(el('p', `Passage: ${a.start} to ${a.end} seconds`)); article.append(button(a.kind === 'youtube' ? 'Play passage online' : 'View source online', () => sourceViewer(a))); }
+    } else { article.append(el('p', a.url, 'muted')); if (a.kind === 'youtube') article.append(el('p', `Passage: ${a.start} to ${a.end} seconds`)); article.append(sourceControl(a)); }
     if (a.excerpt) { const d = el('details'); d.append(el('summary', 'Saved text / ' + a.method), el('p', model.text(a.excerpt))); article.append(d); }
     left.append(article);
   }

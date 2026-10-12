@@ -126,6 +126,7 @@ async function untilFile(filename) {
       const filenamePath = path.join(output, filename);
       await destination(filenamePath);
       await page.getByRole('link', { name: label, exact: true }).click();
+      await page.waitForFunction(() => document.querySelector('#drop-zone').getAttribute('aria-busy') === 'false');
       assert.deepEqual(await untilFile(filenamePath), expectedBytes);
       await page.waitForFunction(() => document.querySelector('#drop-zone').getAttribute('aria-busy') === 'false');
     }
