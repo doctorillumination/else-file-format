@@ -27,6 +27,10 @@ def main():
     html = html.replace('<link rel="stylesheet" href="site.css">',
                         '<link rel="stylesheet" href="site.css"><link rel="stylesheet" href="desktop.css">')
     html = html.replace('Your files stay in this tab.', 'Your files stay on this computer.')
+    html = html.replace('room<br>for', 'room for')
+    html = html.replace('This draft stays in this tab until you save it.', 'Save a .else copy to keep your changes.')
+    html = html.replace('Saving downloads the .else and opens it in the reader below. Reloading clears the draft.',
+                        'Saving opens the .else in the reader below. Save a copy to keep your work.')
     html = html.replace('Reloading clears unsaved work.', 'Save a .else copy to keep your work.')
     (DESTINATION / 'index.html').write_text(html, encoding='utf-8')
     names = ['reader.mjs', 'format.mjs', 'preview.mjs', 'create.mjs', 'site.css']
