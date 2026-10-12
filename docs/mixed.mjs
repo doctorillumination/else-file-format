@@ -173,4 +173,4 @@ async function pdfPreview(bytes, canvas) {
     const observer = new MutationObserver(() => { if (!canvas.isConnected) { observer.disconnect(); void task.destroy(); } }); observer.observe(document.body, { childList: true, subtree: true });
   } catch { await task?.destroy(); canvas.replaceWith(el('p', 'Save the original PDF to read it in your usual app.')); }
 }
-if (location.pathname.endsWith('/mixed.html')) { await launchMixed(); if (desktop) { const pending = await desktop.pendingFile(); if (pending) await launchMixed(pending.bytes, pending.name); } }
+if (/\/mixed(?:\.html)?\/?$/.test(location.pathname)) { await launchMixed(); if (desktop) { const pending = await desktop.pendingFile(); if (pending) await launchMixed(pending.bytes, pending.name); } }
