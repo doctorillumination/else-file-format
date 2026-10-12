@@ -42,7 +42,17 @@ Creation uses the same `two-readings/0.1-experimental` contract, including its w
 
 PDF creation is bounded at 12 MiB, 200 pages and 65,536 extracted text characters. No OCR or summarization occurs. If no selectable text exists, the text blob explicitly says that extraction is unavailable, and the source description records the limitation. Password-protected or unparseable PDFs fail before replacing the current view or draft. The original file is never rewritten. Interpretation text, including its leading whitespace and line breaks, is preserved as entered.
 
-Source descriptions append a clearly labelled extraction-method notice. A source URL is declared text, not fetched content or a verified source identity. ZIP timestamps use a fixed 1980 date solely for container compatibility; they are not provenance timestamps. Creation does not add a signature, delivery record, social history or ratification. Saved files reopen in all three independent readers. Editing and merging an existing package remain future work.
+Source descriptions append a clearly labelled extraction-method notice. A source URL is declared text, not fetched content or a verified source identity. ZIP timestamps use a fixed 1980 date solely for container compatibility; they are not provenance timestamps. Creation does not add a signature, delivery record, social history or ratification. Saved files reopen in all three independent readers.
+
+## Local editing
+
+Editing starts from a validated package, preloading its source declaration, title and both interpretations with their contributor metadata. The original PDF blob and source-text blob are preserved byte for byte. Existing contributor roles are editable and retained when untouched. A human contribution's existing generator declaration is retained; changing an AI contribution to human explicitly changes that declaration. The operator is responsible for keeping contributor labels consistent with any words they replace.
+
+Saving writes a new stored ZIP, with fresh record and integrity hashes. Both interpretations target the resulting material record. The original archive is never overwritten by the website. The edited filename ends in `-edited.else`. The original remains available for download while editing, and cancelling restores its validated view.
+
+The source description appends a plainly labelled revision reference containing the original input filename and exact archive SHA-256. It also states that the prior package and records are not included. This is a reference to a previous artifact, not a signed lineage, embedded revision history or proof of human authorship. Merging, signatures and a structured revision profile remain separate future work. The closed wire schema is unchanged, so all existing experimental readers can read the edited output.
+
+Changed drafts stay in tab memory. The page warns before navigation or replacement discards unsaved words. Close file clears the current model, object URLs, form values, context view and PDF renderer. Clipboard export occurs only on an explicit Copy AI context action.
 
 ## Readers and AI projection
 
@@ -62,4 +72,4 @@ The independent command-line extractor refuses replacement. Native Save original
 
 ## Deliberate omissions
 
-No keys, signatures, encryption, transport, remote fetching, upstream social history, permission service, private notes, recipient identity, editing, merging or automated AI invocation. Authorship and source labels remain declarations. This file cannot retract copies or enforce who later opens an extracted ordinary PDF.
+No keys, signatures, encryption, transport, remote fetching, upstream social history, permission service, private notes, recipient identity, revision merging or automated AI invocation. Authorship and source labels remain declarations. This file cannot retract copies or enforce who later opens an extracted ordinary PDF.

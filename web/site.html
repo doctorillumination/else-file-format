@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'; worker-src 'self'; connect-src 'none'; frame-src 'none'; object-src 'none'; img-src 'self' data:; font-src blob: data:; base-uri 'none'; form-action 'none'">
+<title>.else, a file with room for context</title>
+<meta name="description" content="Open, create and edit .else files on your device. Keep an original PDF beside two interpretations, source information and AI-readable context. Nothing is uploaded.">
+<meta name="theme-color" content="#526a4b">
+<link rel="icon" href="ElseIcon.png" type="image/png">
+<link rel="canonical" href="https://dotelse.app/">
+<link rel="stylesheet" href="site.css">
+</head>
+<body data-reader-state="empty">
+<a class="skip-link" href="#drop-zone">Skip to the reader</a>
+<main>
+<nav class="site-nav" aria-label="Project"><a class="brand" href="#"><img src="ElseIcon.png" width="48" height="48" alt=""><span>.else</span></a><div class="nav-links"><a href="#about">About the format</a><a href="#desktop">Desktop reader</a><a href="__REPOSITORY__">Source</a></div></nav>
+<section class="welcome" aria-labelledby="welcome-heading"><p class="eyebrow">A native format experiment from Cyberdelic OS</p><h1 id="welcome-heading">A file, with room<br>for its context.</h1><p class="intro">Keep an original PDF beside the reasons, questions and interpretations that travel with it.</p></section>
+<section class="opener" id="drop-zone" aria-labelledby="open-heading" aria-busy="false">
+<div class="opener-heading"><h2 id="open-heading">Drop a .else or PDF.</h2><span class="local-label">On your device</span></div>
+<p>Open a .else to read or edit it. Start with a PDF to create one. Nothing is uploaded.</p>
+<div class="opener-actions"><button id="choose-file" type="button" disabled>Choose PDF or .else file</button><button id="try-sample" class="secondary" type="button" disabled>Try a sample</button><button id="close-file" class="text-button" type="button" hidden>Close file</button></div>
+<input id="package-file" type="file" accept=".else,.pdf,application/pdf" aria-label="Choose PDF or .else file" hidden>
+<p class="open-status" id="open-status" role="status" aria-live="polite" aria-atomic="true">Your files stay in this tab. Save a copy to keep your work.</p>
+<p class="open-error" id="open-error" role="alert" hidden></p>
+<details class="format-limits"><summary>What can I open?</summary><p>Standalone two-readings .else files up to 64 MiB. Create from one PDF up to 12 MiB and 200 pages, with up to 65,536 characters of selectable text. Other .else profiles, encrypted PDFs and OCR are outside this first experiment.</p></details>
+<noscript><p>Enable JavaScript to open, create or edit local files. You can still <a href="One-file-two-readings.else" download>download the public sample</a>.</p></noscript>
+</section>
+__CREATOR__
+<section class="reader-shell" id="reader-view" aria-labelledby="material-title" hidden>
+<header class="reader-heading"><div><p class="eyebrow" id="byte-status"></p><h2 id="material-title"></h2><p class="note">The material and its interpretations remain distinct.</p></div><button id="edit-file" type="button">Edit context</button></header>
+<div class="exports"><a id="save-pdf">Save original PDF</a><a id="save-context">Save AI context</a><button class="secondary" id="copy-context" type="button">Copy AI context</button><a id="save-package">Save .else</a></div>
+<div class="reader-grid">
+<section aria-label="Original material">
+<div class="pdf-preview"><div class="pdf-toolbar"><button id="pdf-previous" type="button" disabled>Previous</button><span id="pdf-page" role="status">Preparing the local PDF preview…</span><button id="pdf-next" type="button" disabled>Next</button></div><canvas id="pdf-canvas" role="img" aria-label="Original PDF preview" hidden></canvas></div>
+<p class="note">Save the PDF to open, print or send it through your usual apps.</p>
+<div class="source-summary"><h3>Where it came from</h3><p id="source-creator-view"></p><p id="source-description-view"></p><small>Source information is declared. The file’s fingerprints check its bytes, not a person’s identity.</small></div>
+<details><summary>PDF text (extracted)</summary><pre id="source-view"></pre></details>
+</section>
+<section aria-label="Interpretations and context"><div id="readings"></div><details><summary>AI-readable context</summary><pre id="context-view"></pre></details><details><summary>Inspect source and evidence</summary><pre id="evidence-view"></pre></details></section>
+</div>
+</section>
+<section class="about" id="about" aria-labelledby="about-heading">
+<p class="eyebrow">The file is a score</p><h2 id="about-heading">Carry the difference.</h2>
+<p class="about-intro">A PDF has its own life. Context gives it another. .else makes room for both, without asking an interpretation to become the original.</p>
+<div class="principles"><article><span>01 / Material</span><h3>The original stays itself.</h3><p>Pull out the PDF whenever you choose. Its bytes stay unchanged.</p></article><article><span>02 / Context</span><h3>Two readings can coexist.</h3><p>Keep each interpretation with its contributor. Human and AI words are labelled separately.</p></article><article><span>03 / Provenance</span><h3>Keep a source in view.</h3><p>Carry declared origins and byte fingerprints. Editing saves a new copy with a reference to the earlier file.</p></article></div>
+<p class="note">A small experiment between Carry’s use and Dear Elsewhere’s encounter. Read <a href="https://cyberdelic.space/project/cyberdelic-os/field-notes/fn-45/">Field Note 45</a> for the artistic direction.</p>
+</section>
+<section class="desktop" id="desktop" aria-labelledby="desktop-heading"><div><p class="eyebrow">An ordinary desktop companion</p><h2 id="desktop-heading">Take the reader with you.</h2><p>Open a .else offline, read its context and pull out its PDF. Creation and editing are available here on the website.</p><a class="download" href="__DOWNLOAD__">Download for macOS</a><a class="secondary" href="One-file-two-readings.else" download>Download a sample .else</a><p class="platforms">macOS: Apple silicon and Intel · Linux and Windows desktop apps planned</p><details><summary>About the Mac download</summary><p>Experimental reader for macOS 14 or later. It is locally signed and has not been notarized by Apple. If your Mac blocks the download, <a href="__REPOSITORY__#build-the-macos-reader">build from source</a>. The independent Python reader also runs on Linux and Windows.</p></details></div><img src="ElseIcon.png" width="160" height="160" alt="The paired-leaf .else icon"></section>
+<footer class="site-footer"><p>Local by design. No upload, account, AI call or analytics. Reloading clears unsaved work.</p><div><a href="__REPOSITORY__/blob/main/FORMAT.md">Format</a><a href="__REPOSITORY__">GitHub</a><a href="__REPOSITORY__/blob/main/LICENSE">MIT license</a></div></footer>
+</main>
+<template id="initial-package">__SAMPLE_PACKAGE__</template>
+<script type="module" src="reader.mjs"></script>
+</body>
+</html>

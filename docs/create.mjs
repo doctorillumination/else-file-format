@@ -4,6 +4,11 @@ import { MAX_ENTRY, MAX_ARCHIVE, crc32, digest, readPackage } from './format.mjs
 const encoder = new TextEncoder();
 const encoded = (value) => encoder.encode(JSON.stringify(value) + '\n');
 
+export function revisionDescription(description, name, fingerprint) {
+  if (!/^[0-9a-f]{64}$/.test(fingerprint)) throw new Error('Invalid original-file fingerprint.');
+  return description + '\n\nRevision reference: edited locally from ' + name + ' (SHA-256: ' + fingerprint + '). The original package and earlier records are not included. The original PDF bytes are retained.';
+}
+
 export function pdfFilename(name) {
   if (typeof name !== 'string' || Array.from(name).length > 180 || /[\/\\:\x00-\x1f]/.test(name) || !/\.pdf$/i.test(name)) {
     throw new Error('Use a PDF filename of at most 180 characters, without slashes, colons or control characters. Rename the file on your computer and try again.');

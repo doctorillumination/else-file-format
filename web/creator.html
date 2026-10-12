@@ -1,9 +1,10 @@
 <section class="creator" id="creator" aria-labelledby="create-heading" hidden>
   <div class="editor-head">
     <div><span class="eyebrow">One PDF / Two interpretations</span><h2 id="create-heading">Make room for context.</h2><p id="draft-name"></p></div>
-    <div><a id="draft-pdf">Save original PDF</a><button id="cancel-creation" type="button">Cancel</button></div>
+    <div><a id="draft-pdf">Save original PDF</a><a id="draft-package" hidden>Save original .else</a><button id="cancel-creation" type="button">Cancel</button></div>
   </div>
   <p class="note">Your PDF stays unchanged. Only the source information and interpretations you enter here travel beside it. This draft stays in this tab until you save it.</p>
+  <p class="draft-origin" id="draft-origin" hidden></p>
   <form id="creation-form">
     <fieldset><legend>The material</legend>
       <label for="create-title">Title</label><input id="create-title" name="title" maxlength="180" required>
@@ -15,6 +16,7 @@
       <fieldset><legend>Interpretation 1</legend>
         <label for="reading-1-title">Interpretation title</label><input id="reading-1-title" maxlength="180" placeholder="For use" required>
         <label for="reading-1-name">Contributor name</label><input id="reading-1-name" maxlength="300" required>
+        <label for="reading-1-role">Contributor role</label><input id="reading-1-role" value="Interpretation 1" maxlength="300" required>
         <label for="reading-1-kind">Written by</label><select id="reading-1-kind"><option value="human">A person</option><option value="ai">An AI</option></select>
         <div id="reading-1-generator-field" hidden><label for="reading-1-generator">AI tool or model</label><input id="reading-1-generator" maxlength="300" placeholder="Name the tool or model that wrote these words."></div>
         <label for="reading-1-text">Interpretation</label><textarea id="reading-1-text" rows="7" maxlength="65536" placeholder="What does this material mean to you? Why might you carry it?" required></textarea>
@@ -22,12 +24,14 @@
       <fieldset><legend>Interpretation 2</legend>
         <label for="reading-2-title">Interpretation title</label><input id="reading-2-title" maxlength="180" placeholder="For encounter" required>
         <label for="reading-2-name">Contributor name</label><input id="reading-2-name" maxlength="300" required>
+        <label for="reading-2-role">Contributor role</label><input id="reading-2-role" value="Interpretation 2" maxlength="300" required>
         <label for="reading-2-kind">Written by</label><select id="reading-2-kind"><option value="human">A person</option><option value="ai">An AI</option></select>
         <div id="reading-2-generator-field" hidden><label for="reading-2-generator">AI tool or model</label><input id="reading-2-generator" maxlength="300" placeholder="Name the tool or model that wrote these words."></div>
         <label for="reading-2-text">Interpretation</label><textarea id="reading-2-text" rows="7" maxlength="65536" placeholder="Another reading can sit beside the first without resolving it." required></textarea>
       </fieldset>
     </div>
     <p class="note">Contributor names are declarations. Choose AI for machine-written words and name the tool. The experimental file is unsigned and unencrypted.</p>
+    <p class="unsaved-label" id="unsaved-status" role="status" hidden>Unsaved changes. Save a copy to keep your work.</p>
     <button class="primary" id="save-created" type="submit">Save .else locally</button>
     <p class="note">Nothing is uploaded. Saving downloads the .else and opens it in the reader below. Reloading clears the draft.</p>
   </form>

@@ -1,0 +1,8 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dotelse",
+  "compatibility_date": "2026-10-11",
+  "build": { "command": "python3 build_site.py" },
+  "assets": { "directory": "./docs" },
+  "routes": [{ "pattern": "dotelse.app", "custom_domain": true }]
+}

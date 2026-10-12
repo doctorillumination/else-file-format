@@ -45,7 +45,13 @@ try {
   page.on('pageerror', (error) => errors.push(error.message));
   context.on('request', (request) => { if (/^https?:/.test(request.url())) requests.push({ url: request.url(), method: request.method() }); });
   await page.goto('http://127.0.0.1:' + port + '/');
+  await page.getByRole('button', { name: 'Try a sample', exact: true }).waitFor({ state: 'visible' });
+  assert.equal(await page.locator('body').getAttribute('data-reader-state'), 'empty');
+  assert.equal(await page.locator('#reader-view').isVisible(), false);
+  await page.screenshot({ path: path.join(output, 'Dotelse-home-preview.png'), fullPage: true });
+  await page.getByRole('button', { name: 'Try a sample', exact: true }).click();
   await page.waitForFunction(() => document.body.dataset.previewState === 'ready' && document.querySelector('#drop-zone').getAttribute('aria-busy') === 'false');
+  checks.push('The simple landing page opens the public sample only when requested');
   const baseline = requests.length;
   await context.setOffline(true);
 
@@ -142,9 +148,9 @@ try {
       await page.locator(`#reading-${number}-text`).fill('\n  Synthetic interpretation ' + number + ': Café, a leaf 🌿. <script>fetch("https://example.invalid/do-not-send")</script>\n');
     }
   }
-  async function saveCreated(filename) {
+  async function saveCreated(filename, label = 'Save .else locally') {
     const pending = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Save .else locally', exact: true }).click();
+    await page.getByRole('button', { name: label, exact: true }).click();
     const download = await pending;
     assert.equal(download.suggestedFilename(), filename);
     const destination = path.join(output, filename);
@@ -233,6 +239,66 @@ try {
   await page.waitForFunction(() => document.querySelector('#pdf-page').textContent === 'Page 2 of 2');
   checks.push('A created .else reopens locally, previews both pages and exports the exact original PDF and independent AI context');
 
+  const createdFingerprint = createHash('sha256').update(await readFile(created.destination)).digest('hex');
+  await page.getByRole('button', { name: 'Edit context', exact: true }).click();
+  await page.waitForFunction(() => document.body.dataset.readerState === 'editing' && document.querySelector('#drop-zone').getAttribute('aria-busy') === 'false');
+  assert.equal(await page.locator('#reading-1-text').inputValue(), created.model.interpretations[0].text);
+  assert.equal(await page.locator('#reading-2-role').inputValue(), created.model.interpretations[1].author.role);
+  assert.equal(await page.locator('#source-description').inputValue(), created.model.source.description);
+  assert.ok((await page.locator('#draft-origin').textContent()).includes(createdFingerprint));
+  await page.locator('#reading-1-kind').selectOption('ai');
+  assert.equal(await page.locator('#reading-1-generator').inputValue(), '');
+  assert.equal(await page.locator('#creation-form').evaluate((form) => form.checkValidity()), false);
+  await page.locator('#reading-1-kind').selectOption('human');
+  await page.locator('#reading-1-text').fill('An unsaved synthetic edit.');
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  assert.equal(await page.locator('#context-view').textContent(), created.context);
+  checks.push('Editing preloads all attribution and source information; cancelling restores the unchanged validated file');
+
+  await page.getByRole('button', { name: 'Edit context', exact: true }).click();
+  await page.waitForFunction(() => document.body.dataset.readerState === 'editing' && document.querySelector('#drop-zone').getAttribute('aria-busy') === 'false');
+  await page.locator('#create-title').fill('EDITED_CONTEXT_SENTINEL: Two readings, one unchanged PDF');
+  await page.locator('#reading-1-text').fill('\nA changed, synthetic human interpretation.\n');
+  await page.locator('#reading-1-role').fill('A situated response');
+  await page.locator('#source-description').fill(created.model.source.description + '\nAn additional declared source note.');
+  await page.screenshot({ path: path.join(output, 'Dotelse-editor-preview.png'), fullPage: true });
+  const edited = await saveCreated('Two-pages-edited.else', 'Save edited .else');
+  assert.equal(edited.model.sourceText, created.model.sourceText);
+  assert.equal(edited.model.pdfSHA, created.model.pdfSHA);
+  assert.equal(edited.model.interpretations[1].text, created.model.interpretations[1].text);
+  assert.deepEqual(edited.model.interpretations[1].author, created.model.interpretations[1].author);
+  assert.equal(edited.model.interpretations[0].author.role, 'A situated response');
+  assert.ok(edited.model.source.description.includes(createdFingerprint));
+  assert.ok(edited.model.materialID !== created.model.materialID);
+  assert.ok(edited.model.interpretations.every((reading) => reading.target === edited.model.materialID));
+  assert.equal(createHash('sha256').update(await readFile(created.destination)).digest('hex'), createdFingerprint);
+  const extracted = JSON.parse(execFileSync(python, ['-c', 'import sys,json,reader; model,pdf=reader.read_package(sys.argv[1]); print(json.dumps({"pdf":list(pdf)}))', edited.destination], { cwd: root, encoding: 'utf8' }));
+  assert.deepEqual(Buffer.from(extracted.pdf), twoPagesPDF);
+  checks.push('Saving edits downloads a new copy, records the original fingerprint, preserves PDF and source-text bytes, retains untouched attribution and retargets both interpretations correctly');
+
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: 'http://127.0.0.1:' + port });
+  await page.getByRole('button', { name: 'Copy AI context', exact: true }).click();
+  assert.equal(await page.evaluate(() => navigator.clipboard.readText()), edited.context);
+  checks.push('Copy AI context puts the independently verified context on the isolated test clipboard');
+
+  await page.getByRole('button', { name: 'Edit context', exact: true }).click();
+  await page.waitForFunction(() => document.body.dataset.readerState === 'editing' && document.querySelector('#drop-zone').getAttribute('aria-busy') === 'false');
+  await page.locator('#reading-1-text').fill('UNSAVED_EDIT_SENTINEL');
+  page.once('dialog', async (dialog) => { assert.equal(dialog.type(), 'confirm'); await dialog.dismiss(); });
+  await page.getByRole('button', { name: 'Close file', exact: true }).click();
+  assert.equal(await page.locator('#reading-1-text').inputValue(), 'UNSAVED_EDIT_SENTINEL');
+  page.once('dialog', async (dialog) => { assert.equal(dialog.type(), 'confirm'); await dialog.dismiss(); });
+  await drop(expectedPDF, 'A-replacement.pdf');
+  await page.waitForFunction(() => document.querySelector('#drop-zone').getAttribute('aria-busy') === 'false');
+  assert.equal(await page.locator('#reading-1-text').inputValue(), 'UNSAVED_EDIT_SENTINEL');
+  page.once('dialog', async (dialog) => { assert.equal(dialog.type(), 'confirm'); await dialog.accept(); });
+  await page.getByRole('button', { name: 'Close file', exact: true }).click();
+  assert.equal(await page.locator('body').getAttribute('data-reader-state'), 'empty');
+  assert.equal(await page.locator('#context-view').textContent(), '');
+  assert.equal(await page.locator('#reading-1-text').inputValue(), '');
+  assert.equal(await page.locator('#pdf-canvas').getAttribute('width'), '0');
+  checks.push('Unsaved edits survive cancelled closing or file replacement; confirmed closing clears the file, draft, context and PDF preview');
+
   await drop(await readFile(path.join(fixtures, 'No-selectable-text.pdf')), 'No-selectable-text.pdf');
   await drafted('No-selectable-text.pdf');
   assert.ok((await page.locator('#extraction-note').textContent()).includes('no selectable text'));
@@ -252,15 +318,19 @@ try {
   await drafted('Unsaved.pdf');
   await page.locator('#source-description').fill('UNSAVED_DRAFT_SENTINEL');
   await context.setOffline(false);
+  page.once('dialog', async (dialog) => { assert.equal(dialog.type(), 'beforeunload'); await dialog.accept(); });
   await page.reload();
-  await page.waitForFunction(() => document.body.dataset.readerState === 'specimen' && document.body.dataset.previewState === 'ready' && document.querySelector('#drop-zone').getAttribute('aria-busy') === 'false');
+  await page.waitForFunction(() => document.body.dataset.readerState === 'empty' && document.querySelector('#drop-zone').getAttribute('aria-busy') === 'false');
   assert.ok(!(await page.locator('#context-view').textContent()).includes('LOCAL_CONTEXT_SENTINEL'));
   assert.equal(await page.locator('#creator').isVisible(), false);
   assert.equal(await page.locator('#source-description').inputValue(), '');
   assert.equal(await page.locator('#draft-text').textContent(), '');
-  checks.push('Reload returns to the public specimen and clears both the local file view and an unsaved draft');
+  checks.push('Leaving warns about unsaved work; confirmed reload returns to the landing page and clears both the local file view and draft');
 
   await page.setViewportSize({ width: 390, height: 844 });
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+  await page.getByRole('button', { name: 'Try a sample', exact: true }).click();
+  await page.waitForFunction(() => document.body.dataset.previewState === 'ready' && document.querySelector('#drop-zone').getAttribute('aria-busy') === 'false');
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
   checks.push('The opener, preview and export controls fit a narrow mobile viewport');
   await page.setViewportSize({ width: 1280, height: 1000 });

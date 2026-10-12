@@ -48,5 +48,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Verify local reading, PDF creation, exact downloads and zero upload requests
+      - name: Verify local reading, creation, editing, exact downloads and zero upload requests
         run: npm run test:browser
+      - name: Verify Cloudflare publishes only the static website
+        env:
+          WRANGLER_SEND_METRICS: 'false'
+        run: npx --yes wrangler@4.149.0 deploy --dry-run

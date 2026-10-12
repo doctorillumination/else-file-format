@@ -59,6 +59,22 @@ function buttons() {
   next.disabled = drawing || !pdfDocument || pageNumber >= pdfDocument.numPages;
 }
 
+export async function clearPDF() {
+  revision++;
+  renderTask?.cancel();
+  const previousTask = documentTask;
+  documentTask = null;
+  pdfDocument = null;
+  drawing = false;
+  canvas.hidden = true;
+  canvas.width = 0;
+  canvas.height = 0;
+  label.textContent = '';
+  document.body.dataset.previewState = 'empty';
+  buttons();
+  if (previousTask) await previousTask.destroy();
+}
+
 async function draw(token) {
   drawing = true;
   buttons();

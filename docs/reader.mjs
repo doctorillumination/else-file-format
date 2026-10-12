@@ -1,6 +1,6 @@
-import { MAX_ARCHIVE, MAX_ENTRY, readPackage, aiContext, contextBytes } from './format.mjs';
-import { previewPDF, extractPDFText } from './preview.mjs';
-import { pdfFilename, writePackage } from './create.mjs';
+import { MAX_ARCHIVE, MAX_ENTRY, readPackage, aiContext, contextBytes, digest } from './format.mjs';
+import { previewPDF, extractPDFText, clearPDF } from './preview.mjs';
+import { pdfFilename, writePackage, revisionDescription } from './create.mjs';
 
 const zone = document.querySelector('#drop-zone');
 const input = document.querySelector('#package-file');
@@ -17,18 +17,27 @@ const creator = document.querySelector('#creator');
 const form = document.querySelector('#creation-form');
 const readerView = document.querySelector('#reader-view');
 const draftPDF = document.querySelector('#draft-pdf');
+const draftPackage = document.querySelector('#draft-package');
+const sampleButton = document.querySelector('#try-sample');
+const editButton = document.querySelector('#edit-file');
+const copyButton = document.querySelector('#copy-context');
+const closeButton = document.querySelector('#close-file');
 let revision = 0;
 let current = null;
 let urls = [];
 let busy = false;
 let draft = null;
 let draftURL = null;
+let dirty = false;
 
 function setBusy(value) {
   busy = value;
   choose.disabled = value;
+  sampleButton.disabled = value;
+  editButton.disabled = value;
+  copyButton.disabled = value;
   zone.setAttribute('aria-busy', String(value));
-  for (const link of [pdfLink, contextLink, packageLink, draftPDF]) link.setAttribute('aria-disabled', String(value));
+  for (const link of [pdfLink, contextLink, packageLink, draftPDF, draftPackage]) link.setAttribute('aria-disabled', String(value));
   for (const control of form.querySelectorAll('input, textarea, select, button')) control.disabled = value;
 }
 
@@ -38,14 +47,42 @@ function remainingStatus() {
 
 function clearDraft() {
   draft = null;
+  dirty = false;
   if (draftURL) URL.revokeObjectURL(draftURL);
   draftURL = null;
   draftPDF.removeAttribute('href');
+  draftPackage.removeAttribute('href');
+  draftPackage.hidden = true;
+  document.querySelector('#draft-origin').hidden = true;
+  document.querySelector('#draft-origin').textContent = '';
+  document.querySelector('#unsaved-status').hidden = true;
   form.reset();
   document.querySelector('#draft-text').textContent = '';
+  document.querySelector('#draft-name').textContent = '';
+  document.querySelector('#extraction-note').textContent = '';
   creator.hidden = true;
-  readerView.hidden = false;
+  readerView.hidden = !current;
+  closeButton.hidden = !current;
   for (const number of [1, 2]) updateKind(number);
+}
+
+function mayReplaceDraft() {
+  return !draft || !dirty || window.confirm('Discard these unsaved changes? Save a .else copy first if you want to keep them.');
+}
+
+function showDraft() {
+  draftURL = URL.createObjectURL(new Blob([draft.pdf], { type: 'application/pdf' }));
+  draftPDF.href = draftURL;
+  draftPDF.download = draft.filename;
+  const editing = draft.mode === 'edit';
+  document.querySelector('#create-heading').textContent = editing ? 'Edit the context.' : 'Make room for context.';
+  document.querySelector('#save-created').textContent = editing ? 'Save edited .else' : 'Save .else locally';
+  document.querySelector('#draft-text').textContent = draft.sourceText;
+  document.querySelector('#extraction-note').textContent = draft.extractionNote;
+  creator.hidden = false;
+  readerView.hidden = true;
+  closeButton.hidden = false;
+  document.body.dataset.readerState = editing ? 'editing' : 'draft';
 }
 
 function updateKind(number) {
@@ -60,20 +97,57 @@ async function beginDraft(pdf, filename, token) {
   status.textContent = 'Reading the selectable text in ' + filename + ' on this device…';
   const extraction = await extractPDFText(pdf, () => token === revision);
   if (token !== revision) return;
+  if (!mayReplaceDraft()) { status.textContent = remainingStatus(); return; }
   clearDraft();
-  draft = { pdf, filename, ...extraction };
-  draftURL = URL.createObjectURL(new Blob([pdf], { type: 'application/pdf' }));
-  draftPDF.href = draftURL;
-  draftPDF.download = filename;
+  draft = { mode: 'create', pdf, filename, ...extraction };
   document.querySelector('#create-title').value = filename.replace(/\.pdf$/i, '');
   document.querySelector('#draft-name').textContent = filename + ' · ' + extraction.pages + ' page(s) · original bytes retained';
-  document.querySelector('#draft-text').textContent = extraction.sourceText;
-  document.querySelector('#extraction-note').textContent = extraction.extractionNote;
-  creator.hidden = false;
-  readerView.hidden = true;
-  document.body.dataset.readerState = 'draft';
+  showDraft();
   status.textContent = filename + ' ready. Add source information and two interpretations, then save .else locally. Nothing uploaded.';
   // Focus only after enabling the form at the end of this file operation.
+}
+
+async function editCurrent() {
+  if (busy || !current) return;
+  const token = ++revision;
+  const selected = current;
+  setBusy(true);
+  errorMessage.hidden = true;
+  try {
+    const baseHash = await digest(selected.bytes);
+    if (token !== revision) return;
+    clearDraft();
+    const { model, pdf } = selected.result;
+    draft = { mode: 'edit', pdf, filename: model.filename, sourceText: model.sourceText,
+      extractionNote: 'Preserved from the opened .else. The PDF and its text derivative are kept unchanged.',
+      sourceKind: model.source.kind, authors: model.interpretations.map((reading) => ({ ...reading.author })),
+      baseHash, baseName: selected.name };
+    document.querySelector('#create-title').value = model.title;
+    document.querySelector('#source-creator').value = model.source.creator;
+    document.querySelector('#source-description').value = model.source.description;
+    for (const [index, reading] of model.interpretations.entries()) {
+      const number = index + 1;
+      for (const [suffix, value] of Object.entries({ title: reading.title, name: reading.author.name,
+        role: reading.author.role, kind: reading.author.kind, generator: reading.author.kind === 'ai' ? reading.author.generator : '', text: reading.text })) {
+        document.querySelector(`#reading-${number}-${suffix}`).value = value;
+      }
+      updateKind(number);
+    }
+    document.querySelector('#draft-name').textContent = selected.name + ' · original PDF retained';
+    showDraft();
+    draftPackage.href = packageLink.href;
+    draftPackage.download = selected.name;
+    draftPackage.hidden = false;
+    document.querySelector('#draft-origin').textContent = 'Save creates a new copy. Original .else fingerprint: ' + baseHash + '. A revision reference will travel in the source information.';
+    document.querySelector('#draft-origin').hidden = false;
+    status.textContent = selected.name + ' open for editing. Save an edited copy to keep your changes. Nothing uploaded.';
+  } catch (error) {
+    if (token !== revision) return;
+    errorMessage.textContent = 'Could not prepare editing. ' + error.message;
+    errorMessage.hidden = false;
+  } finally {
+    if (token === revision) { setBusy(false); document.querySelector('#create-title').focus(); }
+  }
 }
 
 function element(tag, words, className) {
@@ -99,14 +173,18 @@ async function render(result, bytes, name, demo) {
   readings.replaceChildren(...model.interpretations.map((reading, index) => {
     const card = document.createElement('article');
     card.append(element('span', `Reading ${index + 1} / ${reading.author.kind} ${reading.author.kind === 'human' ? 'contribution' : 'demonstration'}`, 'eyebrow'),
-      element('h2', reading.title), element('p', reading.text),
+      element('h3', reading.title), element('p', reading.text),
       element('small', reading.author.name + ' · ' + reading.author.role));
     return card;
   }));
   contextView.textContent = aiContext(model);
   evidenceView.textContent = JSON.stringify(model, null, 2);
   document.querySelector('#source-view').textContent = model.sourceText;
-  current = { name, demo };
+  document.querySelector('#source-creator-view').textContent = model.source.creator;
+  document.querySelector('#source-description-view').textContent = model.source.description;
+  current = { name, demo, result, bytes };
+  readerView.hidden = false;
+  closeButton.hidden = false;
   status.textContent = (demo ? 'Public specimen open. ' : name + ' open on this device. ') + 'Original bytes checked. Nothing uploaded.';
   document.body.dataset.readerState = demo ? 'specimen' : 'local';
   for (const url of urls) URL.revokeObjectURL(url);
@@ -114,7 +192,7 @@ async function render(result, bytes, name, demo) {
   await previewPDF(pdf);
 }
 
-async function openBytes(bytes, name, demo = false, token = ++revision) {
+async function openBytes(bytes, name, demo = false, token = ++revision, saving = false) {
   if (token !== revision) return;
   setBusy(true);
   errorMessage.hidden = true;
@@ -122,6 +200,7 @@ async function openBytes(bytes, name, demo = false, token = ++revision) {
   try {
     const result = await readPackage(bytes);
     if (token !== revision) return;
+    if (!saving && !mayReplaceDraft()) { status.textContent = remainingStatus(); return false; }
     clearDraft();
     await render(result, bytes, name, demo);
     return token === revision;
@@ -178,34 +257,36 @@ form.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (busy || !draft || !form.reportValidity()) return;
   const selected = draft;
-  const value = (id) => document.querySelector('#' + id).value.trim();
+  const value = (id) => document.querySelector('#' + id).value;
   const interpretations = [1, 2].map((number) => {
     const kind = value(`reading-${number}-kind`);
     return { title: value(`reading-${number}-title`), text: document.querySelector(`#reading-${number}-text`).value,
-      author: { kind, name: value(`reading-${number}-name`), role: 'Interpretation ' + number,
-        generator: kind === 'ai' ? value(`reading-${number}-generator`) : 'Not applicable (human-written)' } };
+      author: { kind, name: value(`reading-${number}-name`), role: value(`reading-${number}-role`),
+        generator: kind === 'ai' ? value(`reading-${number}-generator`) :
+          selected.mode === 'edit' && selected.authors[number - 1].kind === 'human' ? selected.authors[number - 1].generator : 'Not applicable (human-written)' } };
   });
   const sourceDescription = value('source-description');
-  const source = { kind: 'user-declared', creator: value('source-creator'),
-    description: sourceDescription + '\n\nPDF text extraction: ' + selected.extractionNote };
+  const editing = selected.mode === 'edit';
+  const source = { kind: editing ? selected.sourceKind : 'user-declared', creator: value('source-creator'),
+    description: editing ? revisionDescription(sourceDescription, selected.baseName, selected.baseHash) : sourceDescription + '\n\nPDF text extraction: ' + selected.extractionNote };
   const token = ++revision;
   const title = value('create-title');
   setBusy(true);
   errorMessage.hidden = true;
   status.textContent = 'Creating your .else on this device…';
   try {
-    if (!title) throw new Error('Add a title for the material.');
-    if (!sourceDescription) throw new Error('Add where the PDF came from.');
-    if (!source.creator) throw new Error('Add the original creator, or enter Unknown.');
+    if (!title.trim()) throw new Error('Add a title for the material.');
+    if (!sourceDescription.trim()) throw new Error('Add where the PDF came from.');
+    if (!source.creator.trim()) throw new Error('Add the original creator, or enter Unknown.');
     for (const [index, reading] of interpretations.entries()) {
-      if (!reading.title.trim() || !reading.text.trim() || !reading.author.name.trim()) throw new Error('Add a title, contributor name and text for interpretation ' + (index + 1) + '.');
+      if (!reading.title.trim() || !reading.text.trim() || !reading.author.name.trim() || !reading.author.role.trim()) throw new Error('Add a title, contributor name, role and text for interpretation ' + (index + 1) + '.');
       if (reading.author.kind === 'ai' && !reading.author.generator.trim()) throw new Error('Name the AI tool or model for interpretation ' + (index + 1) + '.');
     }
     const bytes = await writePackage({ pdf: selected.pdf, filename: selected.filename, title,
       source, sourceText: selected.sourceText, interpretations });
     if (token !== revision) return;
-    const name = selected.filename.replace(/\.pdf$/i, '.else');
-    if (await openBytes(bytes, name, false, token) && token === revision) {
+    const name = editing ? selected.baseName.replace(/\.else$/i, '') + '-edited.else' : selected.filename.replace(/\.pdf$/i, '.else');
+    if (await openBytes(bytes, name, false, token, true) && token === revision) {
       packageLink.click();
       status.textContent = name + ' created on this device. Download started. You can save the .else, original PDF or AI context below. Nothing uploaded.';
     }
@@ -218,15 +299,49 @@ form.addEventListener('submit', async (event) => {
     if (token === revision) setBusy(false);
   }
 });
+for (const event of ['input', 'change']) form.addEventListener(event, () => {
+  if (!draft) return;
+  dirty = true;
+  document.querySelector('#unsaved-status').hidden = false;
+});
+window.addEventListener('beforeunload', (event) => {
+  if (draft && dirty) { event.preventDefault(); event.returnValue = ''; }
+});
 for (const number of [1, 2]) document.querySelector(`#reading-${number}-kind`).addEventListener('change', () => updateKind(number));
 document.querySelector('#cancel-creation').addEventListener('click', () => {
   revision++;
   clearDraft();
   setBusy(false);
   errorMessage.hidden = true;
-  document.body.dataset.readerState = current?.demo ? 'specimen' : 'local';
+  document.body.dataset.readerState = current ? (current.demo ? 'specimen' : 'local') : 'empty';
   status.textContent = remainingStatus();
   choose.focus();
+});
+editButton.addEventListener('click', () => void editCurrent());
+copyButton.addEventListener('click', async () => {
+  if (busy || !current) return;
+  try {
+    await navigator.clipboard.writeText(aiContext(current.result.model));
+    status.textContent = 'AI-readable context copied. No file was uploaded.';
+  } catch {
+    status.textContent = 'Clipboard access is unavailable. Choose Save AI context instead.';
+  }
+});
+closeButton.addEventListener('click', async () => {
+  if (!mayReplaceDraft()) return;
+  revision++;
+  clearDraft();
+  current = null;
+  readerView.hidden = true;
+  closeButton.hidden = true;
+  for (const url of urls) URL.revokeObjectURL(url);
+  urls = [];
+  for (const id of ['material-title', 'source-view', 'source-creator-view', 'source-description-view', 'readings', 'context-view', 'evidence-view']) document.querySelector('#' + id).replaceChildren();
+  document.body.dataset.readerState = 'empty';
+  setBusy(false);
+  errorMessage.hidden = true;
+  status.textContent = 'File closed. Your files stay on your computer. Choose another or try a sample.';
+  await clearPDF();
 });
 
 choose.disabled = false;
@@ -236,7 +351,7 @@ input.addEventListener('change', () => {
   input.value = '';
   void openFiles(files);
 });
-for (const link of [pdfLink, contextLink, packageLink, draftPDF]) {
+for (const link of [pdfLink, contextLink, packageLink, draftPDF, draftPackage]) {
   link.addEventListener('click', (event) => { if (busy) event.preventDefault(); });
 }
 document.addEventListener('dragover', (event) => {
@@ -262,4 +377,5 @@ window.addEventListener('pagehide', (event) => {
 
 const specimen = document.querySelector('#initial-package').content.textContent.trim();
 const bytes = Uint8Array.from(atob(specimen), (character) => character.charCodeAt(0));
-await openBytes(bytes, 'One-file-two-readings.else', true);
+sampleButton.addEventListener('click', () => void openBytes(bytes, 'One-file-two-readings.else', true));
+setBusy(false);
