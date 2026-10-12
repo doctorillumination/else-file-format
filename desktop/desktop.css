@@ -1,0 +1,11 @@
+body { background: #eeece4; }
+main { max-width: 1200px; }
+.site-nav { margin-bottom: 24px; }
+.welcome { padding: 8px 0 28px; }
+.welcome h1 { font-size: clamp(36px, 5vw, 58px); }
+.welcome h1 br { display: none; }
+.welcome .intro { max-width: none; }
+body:not([data-reader-state="empty"]) .welcome { display: none; }
+.site-footer { margin-top: 28px; }
+.native-drag { cursor: grab; }
+.native-drag:active { cursor: grabbing; }

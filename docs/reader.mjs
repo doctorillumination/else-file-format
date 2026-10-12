@@ -29,6 +29,35 @@ let busy = false;
 let draft = null;
 let draftURL = null;
 let dirty = false;
+const desktop = window.elseDesktop;
+let unsavedPackage = false;
+
+async function nativeExport(link) {
+  if (!desktop || busy) return false;
+  let value;
+  if (link === draftPDF && draft) value = { bytes: draft.pdf, name: draft.filename, kind: 'pdf' };
+  else if (current) {
+    const { model, pdf } = current.result;
+    if (link === pdfLink) value = { bytes: pdf, name: model.filename, kind: 'pdf' };
+    else if (link === contextLink) value = { bytes: contextBytes(model), name: 'context.md', kind: 'md' };
+    else if (link === packageLink || link === draftPackage) value = { bytes: new Uint8Array(current.bytes), name: current.name, kind: 'else' };
+  }
+  if (!value) return false;
+  const token = revision;
+  setBusy(true);
+  try {
+    const result = await desktop.saveFile(value);
+    if (token !== revision) return result.saved;
+    if (result.saved && value.kind === 'else') unsavedPackage = false;
+    status.textContent = result.saved ? result.name + ' saved on this computer. Nothing uploaded.' :
+      'Save cancelled. ' + (unsavedPackage ? 'Your .else copy is still unsaved. Choose Save .else to keep it.' : 'Your file remains open.');
+    return result.saved;
+  } catch (error) {
+    errorMessage.textContent = 'Could not save. ' + error.message + ' Your copy is still available here.';
+    errorMessage.hidden = false;
+    return false;
+  } finally { if (token === revision) setBusy(false); }
+}
 
 function setBusy(value) {
   busy = value;
@@ -66,8 +95,10 @@ function clearDraft() {
   for (const number of [1, 2]) updateKind(number);
 }
 
-function mayReplaceDraft() {
-  return !draft || !dirty || window.confirm('Discard these unsaved changes? Save a .else copy first if you want to keep them.');
+async function mayReplaceDraft() {
+  if (!(draft && dirty) && !unsavedPackage) return true;
+  if (desktop) return desktop.confirmDiscard();
+  return window.confirm('Discard these unsaved changes? Save a .else copy first if you want to keep them.');
 }
 
 function showDraft() {
@@ -97,7 +128,9 @@ async function beginDraft(pdf, filename, token) {
   status.textContent = 'Reading the selectable text in ' + filename + ' on this device…';
   const extraction = await extractPDFText(pdf, () => token === revision);
   if (token !== revision) return;
-  if (!mayReplaceDraft()) { status.textContent = remainingStatus(); return; }
+  const replace = await mayReplaceDraft();
+  if (token !== revision) return;
+  if (!replace) { status.textContent = remainingStatus(); return; }
   clearDraft();
   draft = { mode: 'create', pdf, filename, ...extraction };
   document.querySelector('#create-title').value = filename.replace(/\.pdf$/i, '');
@@ -200,7 +233,10 @@ async function openBytes(bytes, name, demo = false, token = ++revision, saving =
   try {
     const result = await readPackage(bytes);
     if (token !== revision) return;
-    if (!saving && !mayReplaceDraft()) { status.textContent = remainingStatus(); return false; }
+    const replace = saving || await mayReplaceDraft();
+    if (token !== revision) return;
+    if (!replace) { status.textContent = remainingStatus(); return false; }
+    unsavedPackage = false;
     clearDraft();
     await render(result, bytes, name, demo);
     return token === revision;
@@ -287,8 +323,13 @@ form.addEventListener('submit', async (event) => {
     if (token !== revision) return;
     const name = editing ? selected.baseName.replace(/\.else$/i, '') + '-edited.else' : selected.filename.replace(/\.pdf$/i, '.else');
     if (await openBytes(bytes, name, false, token, true) && token === revision) {
-      packageLink.click();
-      status.textContent = name + ' created on this device. Download started. You can save the .else, original PDF or AI context below. Nothing uploaded.';
+      if (desktop) {
+        unsavedPackage = true;
+        await nativeExport(packageLink);
+      } else {
+        packageLink.click();
+        status.textContent = name + ' created on this device. Download started. You can save the .else, original PDF or AI context below. Nothing uploaded.';
+      }
     }
   } catch (error) {
     if (token !== revision) return;
@@ -305,7 +346,7 @@ for (const event of ['input', 'change']) form.addEventListener(event, () => {
   document.querySelector('#unsaved-status').hidden = false;
 });
 window.addEventListener('beforeunload', (event) => {
-  if (draft && dirty) { event.preventDefault(); event.returnValue = ''; }
+  if (draft && dirty || unsavedPackage) { event.preventDefault(); event.returnValue = ''; }
 });
 for (const number of [1, 2]) document.querySelector(`#reading-${number}-kind`).addEventListener('change', () => updateKind(number));
 document.querySelector('#cancel-creation').addEventListener('click', () => {
@@ -328,10 +369,13 @@ copyButton.addEventListener('click', async () => {
   }
 });
 closeButton.addEventListener('click', async () => {
-  if (!mayReplaceDraft()) return;
+  const token = revision;
+  if (!await mayReplaceDraft()) return;
+  if (token !== revision) return;
   revision++;
   clearDraft();
   current = null;
+  unsavedPackage = false;
   readerView.hidden = true;
   closeButton.hidden = true;
   for (const url of urls) URL.revokeObjectURL(url);
@@ -345,14 +389,23 @@ closeButton.addEventListener('click', async () => {
 });
 
 choose.disabled = false;
-choose.addEventListener('click', () => input.click());
+choose.addEventListener('click', async () => {
+  if (!desktop) { input.click(); return; }
+  try {
+    const value = await desktop.chooseFile();
+    if (value) await receiveNativeFile(value);
+  } catch (error) { errorMessage.textContent = error.message; errorMessage.hidden = false; }
+});
 input.addEventListener('change', () => {
   const files = Array.from(input.files);
   input.value = '';
   void openFiles(files);
 });
 for (const link of [pdfLink, contextLink, packageLink, draftPDF, draftPackage]) {
-  link.addEventListener('click', (event) => { if (busy) event.preventDefault(); });
+  link.addEventListener('click', (event) => {
+    if (desktop) { event.preventDefault(); if (!busy) void nativeExport(link); }
+    else if (busy) event.preventDefault();
+  });
 }
 document.addEventListener('dragover', (event) => {
   if (Array.from(event.dataTransfer?.types ?? []).includes('Files')) {
@@ -379,3 +432,29 @@ const specimen = document.querySelector('#initial-package').content.textContent.
 const bytes = Uint8Array.from(atob(specimen), (character) => character.charCodeAt(0));
 sampleButton.addEventListener('click', () => void openBytes(bytes, 'One-file-two-readings.else', true));
 setBusy(false);
+
+async function receiveNativeFile(value) {
+  if (value.error) { errorMessage.textContent = value.error; errorMessage.hidden = false; return; }
+  await openFiles([new File([value.bytes], value.name)]);
+}
+
+if (desktop) {
+  desktop.onFile((value) => void receiveNativeFile(value));
+  desktop.onAction((action) => {
+    if (action === 'save') { if (draft) form.requestSubmit(); else if (current) void nativeExport(packageLink); }
+    else if (action === 'edit') void editCurrent();
+  });
+  const drag = element('button', 'Drag original PDF out', 'secondary native-drag');
+  drag.type = 'button';
+  drag.draggable = true;
+  drag.addEventListener('dragstart', (event) => {
+    event.preventDefault();
+    if (busy || !current) return;
+    void desktop.dragPDF({ bytes: current.result.pdf, name: current.result.model.filename, kind: 'pdf' }).catch(() => {
+      status.textContent = 'Could not start the PDF drag. Choose Save original PDF instead.';
+    });
+  });
+  document.querySelector('.exports').append(drag);
+  const pending = await desktop.pendingFile();
+  if (pending) await receiveNativeFile(pending);
+}

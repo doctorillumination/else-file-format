@@ -1,0 +1,133 @@
+name: Build desktop authoring apps
+
+on:
+  push:
+    branches: [main, 'codex/**']
+    tags: ['v*']
+    paths: ['desktop/**', 'web/**', 'assets/**', 'specimen/**', 'build_site.py', 'reader.py', 'browser_fixtures.py', 'test_experiment.py', 'package*.json', '.github/workflows/desktop.yml']
+  pull_request:
+    paths: ['desktop/**', 'web/**', 'assets/**', 'specimen/**', 'build_site.py', 'reader.py', 'browser_fixtures.py', 'test_experiment.py', 'package*.json', '.github/workflows/desktop.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            target: --mac --universal
+            executable: output/desktop-release/mac-universal/Dotelse.app/Contents/MacOS/Dotelse
+          - os: windows-latest
+            target: --win --x64
+            executable: output/desktop-release/win-unpacked/Dotelse.exe
+          - os: ubuntu-22.04
+            target: --linux --x64
+            executable: output/desktop-release/linux-unpacked/dotelse-desktop
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            desktop/package-lock.json
+      - run: npm ci
+      - run: npm ci --prefix desktop
+      - name: Build the offline authoring application
+        run: python desktop/build_desktop.py
+      - name: Install Linux display dependencies
+        if: runner.os == 'Linux'
+        run: npx playwright install-deps chromium
+      - name: Check desktop creation, editing, exact exports and privacy boundaries
+        if: runner.os != 'Linux'
+        run: node desktop/test_desktop.cjs
+      - name: Check Linux desktop authoring
+        if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum node desktop/test_desktop.cjs
+      - name: Package the platform downloads
+        working-directory: desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run package -- ${{ matrix.target }}
+      - name: Check the actual packaged application
+        if: runner.os != 'Linux'
+        env:
+          ELSE_DESKTOP_EXECUTABLE: ${{ github.workspace }}/${{ matrix.executable }}
+        run: node desktop/test_desktop.cjs
+      - name: Check the actual packaged Linux application
+        if: runner.os == 'Linux'
+        env:
+          ELSE_DESKTOP_EXECUTABLE: ${{ github.workspace }}/${{ matrix.executable }}
+        run: xvfb-run --auto-servernum node desktop/test_desktop.cjs
+      - name: Save tested downloads
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: desktop-${{ runner.os }}
+          path: |
+            output/desktop-release/*.zip
+            output/desktop-release/*.exe
+            output/desktop-release/*.AppImage
+            output/desktop-release/*.deb
+          if-no-files-found: error
+          retention-days: 7
+      - name: Save verification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: desktop-checks-${{ runner.os }}
+          path: output/desktop-checks-*/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  mac-intel:
+    needs: desktop
+    runs-on: macos-15-intel
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+      - run: npm ci
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: desktop-macOS
+          path: output/mac-intel
+      - name: Extract and verify the universal Mac download
+        run: |
+          ditto -xk output/mac-intel/Dotelse-0.2.0-macOS-universal.zip output/mac-intel
+          codesign --verify --deep --strict output/mac-intel/Dotelse.app
+          python3 -c "import subprocess; assert set(subprocess.check_output(['xcrun', 'lipo', '-archs', 'output/mac-intel/Dotelse.app/Contents/MacOS/Dotelse'], text=True).split()) == {'arm64', 'x86_64'}"
+      - name: Check the universal application on an Intel Mac
+        env:
+          ELSE_DESKTOP_EXECUTABLE: ${{ github.workspace }}/output/mac-intel/Dotelse.app/Contents/MacOS/Dotelse
+        run: node desktop/test_desktop.cjs
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [desktop, mac-intel]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: desktop-*
+          merge-multiple: false
+          path: output/release-downloads
+      - name: Publish tested platform downloads and fingerprints
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 desktop/publish_release.py
