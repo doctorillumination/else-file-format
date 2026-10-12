@@ -24,7 +24,7 @@ The manifest has exactly `format`, `version`, `profile`, `material`, `contexts`,
 
 Fields: `type` (material), `title`, `filename`, `mime` (application/pdf), `pdf` (blob digest), `text` (blob digest), `source`.
 
-`source` contains declared `kind`, `creator` and `description`. The PDF is retained byte for byte. Its text blob is an explicitly labelled extraction derivative for accessible and AI reading. The writer extracts it with pypdf; readers preserve it rather than trusting a generated summary. A hash binds each record and its included blobs, but does not prove that a supplied transcription accurately describes a different PDF. The sample's extracted text is also checked against the specimen PDF during verification.
+`source` contains declared `kind`, `creator` and `description`. The PDF is retained byte for byte. Its text blob is an explicitly labelled extraction derivative for accessible and AI reading. The specimen writer extracts it with pypdf; the browser creator extracts selectable text locally with bundled PDF.js. Readers preserve it rather than trusting a generated summary. A hash binds each record and its included blobs, but does not prove that a supplied transcription accurately describes a different PDF. The sample's extracted text is also checked against the specimen PDF during verification.
 
 Only a safe original basename ending in `.pdf` is accepted. It contains no path separators, colon, control characters or parent-directory traversal and is at most 180 characters. Internal blob paths never become export destinations.
 
@@ -33,6 +33,16 @@ Only a safe original basename ending in `.pdf` is accepted. It contains no path 
 Fields: `type` (context), `title`, `target` (the exact material record digest), `author`, `status` (demonstration), `text` (UTF-8 blob digest).
 
 `author` contains `kind` (ai or human), `name`, `role` and `generator`. The actual specimen uses AI-labelled authors for both readings. These are separate context records targeting the same material, not changes to the PDF. Unknown fields fail in this closed subset rather than being silently serialized into exports.
+
+## Local creation
+
+The website accepts one dropped or selected PDF and requires declared source information plus exactly two attributed interpretations. It retains the selected PDF byte for byte, builds content-addressed material, text and context records, then writes a stored ZIP with CRC checks and an exact integrity index. It validates the finished archive with the browser reader before downloading it. No upload, source-link fetch, model call or persistent browser storage is involved.
+
+Creation uses the same `two-readings/0.1-experimental` contract, including its wire status `demonstration`. That status identifies an experimental contribution, not a claim about whether its declared contributor is a person or a machine. Human contributions use `kind: human` and `generator: Not applicable (human-written)`; AI contributions require a declared tool or model. Current reader sources distinguish human contributions from unratified AI demonstrations in the context projection. The original released desktop binary accepts both kinds with its earlier general demonstration wording.
+
+PDF creation is bounded at 12 MiB, 200 pages and 65,536 extracted text characters. No OCR or summarization occurs. If no selectable text exists, the text blob explicitly says that extraction is unavailable, and the source description records the limitation. Password-protected or unparseable PDFs fail before replacing the current view or draft. The original file is never rewritten. Interpretation text, including its leading whitespace and line breaks, is preserved as entered.
+
+Source descriptions append a clearly labelled extraction-method notice. A source URL is declared text, not fetched content or a verified source identity. ZIP timestamps use a fixed 1980 date solely for container compatibility; they are not provenance timestamps. Creation does not add a signature, delivery record, social history or ratification. Saved files reopen in all three independent readers. Editing and merging an existing package remain future work.
 
 ## Readers and AI projection
 

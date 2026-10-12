@@ -106,6 +106,19 @@ def main():
     with tempfile.TemporaryDirectory(prefix='else-specimen-tests-') as folder_name:
         folder = Path(folder_name)
         before = reader.digest(SAMPLE.read_bytes())
+        created = folder / 'Created.else'
+        writer = subprocess.run([NODE, str(ROOT / 'web/test_writer.mjs'), str(ROOT / 'specimen/A-file-and-its-conversation.pdf'), str(created)], capture_output=True)
+        assert writer.returncode == 0, writer.stderr.decode()
+        created_model, created_pdf = reader.read_package(created)
+        assert created_pdf == pdf and created_model['title'] == 'Local creation <img> ✓'
+        assert [r['author']['kind'] for r in created_model['interpretations']] == ['human', 'ai']
+        for inspect in (run, browser):
+            result = inspect('--inspect', created)
+            assert result.returncode == 0 and json.loads(result.stdout) == created_model, result.stderr.decode()
+            result = inspect('--context', created)
+            assert result.returncode == 0 and result.stdout.decode() == reader.ai_context(created_model), result.stderr.decode()
+        assert 'experimental human contribution' in reader.ai_context(created_model)
+        checks.append('Browser writer output independently opens in all three readers with mixed human and AI attribution, matching context and unchanged PDF bytes; 9 writer boundaries rejected')
         for label in ('python', 'swift', 'browser'):
             output = folder / (label + '.pdf')
             if label == 'python':

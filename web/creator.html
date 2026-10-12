@@ -1,0 +1,34 @@
+<section class="creator" id="creator" aria-labelledby="create-heading" hidden>
+  <div class="editor-head">
+    <div><span class="eyebrow">One PDF / Two interpretations</span><h2 id="create-heading">Make room for context.</h2><p id="draft-name"></p></div>
+    <div><a id="draft-pdf">Save original PDF</a><button id="cancel-creation" type="button">Cancel</button></div>
+  </div>
+  <p class="note">Your PDF stays unchanged. Only the source information and interpretations you enter here travel beside it. This draft stays in this tab until you save it.</p>
+  <form id="creation-form">
+    <fieldset><legend>The material</legend>
+      <label for="create-title">Title</label><input id="create-title" name="title" maxlength="180" required>
+      <label for="source-creator">Original creator</label><input id="source-creator" name="sourceCreator" maxlength="300" placeholder="Who made the PDF? Use Unknown if you do not know." required>
+      <label for="source-description">Where it came from</label><textarea id="source-description" name="sourceDescription" rows="3" maxlength="4000" placeholder="A source link, publication, date, or how this PDF reached you." required></textarea>
+      <details><summary>PDF text for AI-readable context</summary><p class="note" id="extraction-note"></p><pre id="draft-text"></pre></details>
+    </fieldset>
+    <div class="interpretation-fields">
+      <fieldset><legend>Interpretation 1</legend>
+        <label for="reading-1-title">Interpretation title</label><input id="reading-1-title" maxlength="180" placeholder="For use" required>
+        <label for="reading-1-name">Contributor name</label><input id="reading-1-name" maxlength="300" required>
+        <label for="reading-1-kind">Written by</label><select id="reading-1-kind"><option value="human">A person</option><option value="ai">An AI</option></select>
+        <div id="reading-1-generator-field" hidden><label for="reading-1-generator">AI tool or model</label><input id="reading-1-generator" maxlength="300" placeholder="Name the tool or model that wrote these words."></div>
+        <label for="reading-1-text">Interpretation</label><textarea id="reading-1-text" rows="7" maxlength="65536" placeholder="What does this material mean to you? Why might you carry it?" required></textarea>
+      </fieldset>
+      <fieldset><legend>Interpretation 2</legend>
+        <label for="reading-2-title">Interpretation title</label><input id="reading-2-title" maxlength="180" placeholder="For encounter" required>
+        <label for="reading-2-name">Contributor name</label><input id="reading-2-name" maxlength="300" required>
+        <label for="reading-2-kind">Written by</label><select id="reading-2-kind"><option value="human">A person</option><option value="ai">An AI</option></select>
+        <div id="reading-2-generator-field" hidden><label for="reading-2-generator">AI tool or model</label><input id="reading-2-generator" maxlength="300" placeholder="Name the tool or model that wrote these words."></div>
+        <label for="reading-2-text">Interpretation</label><textarea id="reading-2-text" rows="7" maxlength="65536" placeholder="Another reading can sit beside the first without resolving it." required></textarea>
+      </fieldset>
+    </div>
+    <p class="note">Contributor names are declarations. Choose AI for machine-written words and name the tool. The experimental file is unsigned and unencrypted.</p>
+    <button class="primary" id="save-created" type="submit">Save .else locally</button>
+    <p class="note">Nothing is uploaded. Saving downloads the .else and opens it in the reader below. Reloading clears the draft.</p>
+  </form>
+</section>

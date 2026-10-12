@@ -25,6 +25,7 @@ resources = {
     '/reader.mjs': ((ROOT / 'web/reader.mjs').read_bytes(), 'text/javascript; charset=utf-8', None),
     '/format.mjs': ((ROOT / 'web/format.mjs').read_bytes(), 'text/javascript; charset=utf-8', None),
     '/preview.mjs': ((ROOT / 'web/preview.mjs').read_bytes(), 'text/javascript; charset=utf-8', None),
+    '/create.mjs': ((ROOT / 'web/create.mjs').read_bytes(), 'text/javascript; charset=utf-8', None),
     '/vendor/pdf.mjs': ((ROOT / 'web/vendor/pdf.mjs').read_bytes(), 'text/javascript; charset=utf-8', None),
     '/vendor/pdf.worker.mjs': ((ROOT / 'web/vendor/pdf.worker.mjs').read_bytes(), 'text/javascript; charset=utf-8', None)
 }

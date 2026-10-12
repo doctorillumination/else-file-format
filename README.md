@@ -8,7 +8,7 @@ A file, with room for its context.
 
 This first standalone experiment contains **one PDF, two interpretations and two independent readers**. It explores a practical Carry-like reading and a Dear Elsewhere-like encounter reading. It changes neither application and does not replace their existing `.else` formats.
 
-The website now adds a third independent reader in JavaScript, using the same bounded format and the same selected AI context.
+The website adds a third independent reader in JavaScript and a local creator, using the same bounded format and the same selected AI context.
 
 ## Try the experiment
 
@@ -18,11 +18,15 @@ The website now adds a third independent reader in JavaScript, using the same bo
 
 The macOS download contains Apple silicon and Intel builds targeting macOS 14 or later. It is ad hoc signed and has not been notarized by Apple. Gatekeeper may block a downloaded build. Building from source is also available below.
 
-On the website, drag a `.else` file onto the page or choose **Choose .else file**. A supported file opens entirely on your device. Choose **Save original PDF** or **Save AI context** to export either without changing the package. The PDF remains an ordinary, exact-byte PDF.
+On the website, drag a `.else` file onto the page or choose **Choose PDF or .else file**. A supported file opens entirely on your device. Choose **Save original PDF**, **Save AI context** or **Save .else** to export without changing the package. The PDF remains an ordinary, exact-byte PDF.
+
+To create a file, drop one PDF. Add a title, its original creator and where it came from, then add two interpretations with contributor names. Each interpretation is explicitly labelled human or AI; machine-written words also require a tool or model name. Choose **Save .else locally** to download the package and open it in the reader. The original PDF can be saved directly from the draft or pulled out of the finished file.
+
+Creation supports PDFs up to 12 MiB and 200 pages, with up to 65,536 characters of selectable text. Text is extracted locally with bundled PDF.js for the AI view, without OCR or summarization. A PDF with no selectable text is carried unchanged, with an explicit unavailable-text notice. Password-protected PDFs are unsupported. Source links remain text and are never fetched. The file uses the existing unsigned experimental profile, so the native and Python readers can open it too. Creation currently lives in the website; the desktop app remains a reader.
 
 The browser validates the archive, references, hashes and selected records before replacing the view. It accepts the standalone `two-readings/0.1-experimental` profile, up to 64 MiB; other Dear Elsewhere or Carry formats remain separate. An invalid file leaves the previous valid file open with a clear error.
 
-Once the page has loaded, file opening, PDF preview and both exports work offline. Selected bytes stay in tab memory. The reader performs no upload, AI call, background storage or tracking. Reloading returns to the public specimen. The PDF preview uses a bundled local renderer, with no active document scripts or forms; see [third-party attribution](THIRD_PARTY.md).
+Once the page has loaded, opening, text extraction, creation, PDF preview and all exports work offline. Selected bytes and unsaved drafts stay in tab memory. The reader performs no upload, AI call, background storage or tracking. Reloading returns to the public specimen and clears the draft. The PDF preview uses a bundled local renderer, with no active document scripts or forms; see [third-party attribution](THIRD_PARTY.md).
 
 Linux and Windows desktop apps are planned. The independent Python command-line reader already uses only the standard library, making it portable across those systems. Desktop packaging and platform verification remain separate work.
 
@@ -102,7 +106,7 @@ npx playwright install chromium
 npm run test:browser
 ```
 
-These tests use synthetic packages and a fresh browser profile. They exercise drag-in, keyboard file selection, exact downloads, rejected content, overlapping file choices, clearing on reload, narrow layouts and zero HTTP requests during local file use. Test tooling is not required to use the website.
+These tests use synthetic packages and a fresh browser profile. They exercise drag-in, keyboard file selection, PDF creation, human and AI attribution, text extraction, exact downloads, independent reader round-trips, rejected content, overlapping file choices, clearing drafts on reload, narrow layouts and zero HTTP requests during local file use. Test tooling is not required to use the website.
 
 ## Recreate the sample
 
@@ -128,7 +132,7 @@ The AI projection is selected task data. It includes source words, contributor r
 
 ## The next experiment
 
-The website provides a local reader across desktop platforms. Future work can broaden the accepted profiles and accessibility of PDF previews. Linux and Windows desktop packages would add native drag-out, offline file opening and file associations.
+The website provides local reading and creation across desktop platforms. Future work can broaden the accepted profiles, material types and accessibility of PDF previews. Linux and Windows desktop packages would add native drag-out, offline file opening and file associations.
 
 Future collaboration can add written or spoken responses, with each contribution linked to its input revision and kept distinct from the source. Signatures, transport, live AI participation, revision merging, Carry events and Dear Elsewhere arrivals require their own experiments and human decisions. None is represented as implemented here.
 

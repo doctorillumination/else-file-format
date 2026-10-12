@@ -48,5 +48,5 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Verify local drag-in, exact downloads and zero upload requests
+      - name: Verify local reading, PDF creation, exact downloads and zero upload requests
         run: npm run test:browser

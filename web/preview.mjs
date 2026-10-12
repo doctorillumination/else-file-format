@@ -13,6 +13,47 @@ let revision = 0;
 let pageNumber = 1;
 let drawing = false;
 
+function localDocument(pdf) {
+  return getDocument({ data: pdf.slice(), worker, isEvalSupported: false,
+    useWasm: false, useWorkerFetch: false, useSystemFonts: true,
+    disableAutoFetch: true, disableStream: true, maxImageSize: 4 * 1024 * 1024,
+    canvasMaxAreaInBytes: 16 * 1024 * 1024, verbosity: 0 });
+}
+
+export async function extractPDFText(pdf, isCurrent = () => true) {
+  await worker.promise;
+  const task = localDocument(pdf);
+  task.onPassword = () => { void task.destroy(); };
+  try {
+    const document = await task.promise;
+    if (document.numPages > 200) throw new Error('This experiment supports PDF text extraction for up to 200 pages.');
+    const pages = [];
+    let characters = 0;
+    for (let number = 1; number <= document.numPages; number++) {
+      if (!isCurrent()) throw new Error('A newer file was selected.');
+      const page = await document.getPage(number);
+      const content = await page.getTextContent();
+      const words = content.items.filter((item) => typeof item.str === 'string')
+        .map((item) => item.str + (item.hasEOL ? '\n' : ' ')).join('').trim();
+      characters += Array.from(words).length + 2;
+      if (characters > 65536) throw new Error('The selectable PDF text exceeds this experiment\'s 65,536-character limit. Try a shorter PDF.');
+      pages.push(words);
+      page.cleanup();
+    }
+    const sourceText = pages.join('\n\n').trim();
+    return { sourceText: sourceText || 'No selectable text was found in the PDF. No OCR or transcription was performed.',
+      extractionNote: sourceText ? 'Selectable text extracted locally with PDF.js. No OCR or summarization was performed.' : 'Text extraction unavailable: no selectable text was found. No OCR or transcription was performed.',
+      pages: document.numPages };
+  } catch (error) {
+    if (error.name === 'PasswordException' || error.message?.includes('Worker was destroyed')) {
+      throw new Error('Password-protected PDFs are not supported in this experiment. Use an unlocked copy.');
+    }
+    throw error;
+  } finally {
+    await task.destroy();
+  }
+}
+
 function buttons() {
   previous.disabled = drawing || !pdfDocument || pageNumber <= 1;
   next.disabled = drawing || !pdfDocument || pageNumber >= pdfDocument.numPages;
@@ -55,10 +96,7 @@ export async function previewPDF(pdf) {
     if (token !== revision) return;
     await worker.promise;
     if (token !== revision) return;
-    documentTask = getDocument({ data: pdf.slice(), worker, isEvalSupported: false,
-      useWasm: false, useWorkerFetch: false, useSystemFonts: true,
-      disableAutoFetch: true, disableStream: true, maxImageSize: 4 * 1024 * 1024,
-      canvasMaxAreaInBytes: 16 * 1024 * 1024, verbosity: 0 });
+    documentTask = localDocument(pdf);
     documentTask.onPassword = () => { void documentTask.destroy(); };
     const document = await documentTask.promise;
     if (token !== revision) return;

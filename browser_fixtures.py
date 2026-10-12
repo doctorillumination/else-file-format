@@ -7,6 +7,30 @@ import reader
 from test_experiment import encode, indexed, original, write_archive
 
 
+def plain_pdf(pages):
+    """Small synthetic PDFs with a valid cross-reference table, no PDF dependencies."""
+    objects = [b'<< /Type /Catalog /Pages 2 0 R >>', b'']
+    kids = []
+    for words in pages:
+        page = len(objects) + 1
+        kids.append(f'{page} 0 R')
+        objects.append(f'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 540 720] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents {page + 1} 0 R >>'.encode())
+        content = f'BT /F1 14 Tf 48 650 Td ({words}) Tj ET'.encode()
+        objects.append(f'<< /Length {len(content)} >>\nstream\n'.encode() + content + b'\nendstream')
+    objects[1] = f'<< /Type /Pages /Count {len(pages)} /Kids [{" ".join(kids)}] >>'.encode()
+    data = bytearray(b'%PDF-1.4\n')
+    offsets = [0]
+    for number, value in enumerate(objects, 1):
+        offsets.append(len(data))
+        data.extend(f'{number} 0 obj\n'.encode() + value + b'\nendobj\n')
+    start = len(data)
+    data.extend(f'xref\n0 {len(objects) + 1}\n0000000000 65535 f \n'.encode())
+    for offset in offsets[1:]:
+        data.extend(f'{offset:010d} 00000 n \n'.encode())
+    data.extend(f'trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{start}\n%%EOF\n'.encode())
+    return bytes(data)
+
+
 def write_fixtures(folder):
     folder = Path(folder)
     folder.mkdir(parents=True, exist_ok=True)
@@ -46,6 +70,9 @@ def write_fixtures(folder):
     private['blobs/sha256/' + reader.digest(unselected)] = unselected
     write_archive(folder / 'Unselected-note.else', indexed(private))
     (folder / 'Truncated.else').write_bytes(valid.read_bytes()[:-1])
+    (folder / 'Two-pages.pdf').write_bytes(plain_pdf(['SYNTHETIC_FIRST_PAGE', 'SYNTHETIC_SECOND_PAGE']))
+    (folder / 'No-selectable-text.pdf').write_bytes(plain_pdf(['']))
+    (folder / 'Not-a-PDF.pdf').write_bytes(b'This is deliberately not a PDF.')
     return valid
 
 

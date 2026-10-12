@@ -12,7 +12,7 @@ Date: October 11, 2026. Local macOS build, not a production security audit.
 - Native Save original was exercised through its real save panel. Its output matches the PDF blob and original source file byte for byte.
 - The independent browser reader was visually inspected through a loopback preview restricted to this public specimen. Its original-PDF download also matches the original bytes. The saved offline HTML contains the same independently decoded model.
 - The native AI-context panel was opened and checked for source words, both readings, attribution, exact references, included scope and evidence limits.
-- Automated malformed, unsupported and private-content fixtures are rejected by all three readers. The bundled offline report also matches the Python reader exactly. See `output/checks.json` for all 26 checks.
+- Automated malformed, unsupported and private-content fixtures are rejected by all three readers. The bundled offline report also matches the Python reader exactly. See `output/checks.json` for all 27 checks, including browser-writer compatibility and nine invalid creation inputs.
 - The standalone implementation was developed without editing Dear Elsewhere or Carry implementation files. A local fingerprint comparison confirmed this boundary before publication. Private workspace inventories are not included in this public repository.
 
 ## Drag verification boundary
@@ -23,7 +23,7 @@ The drag status indicates completion of a local desktop gesture only. It does no
 
 ## Deliberate scope
 
-This is one PDF, two AI-labelled demonstration readings, two independent readers and a selected AI context export. It includes no live model call, signatures, encryption, voice notes, real social journey, app integration or production format release.
+The public specimen is one PDF with two AI-labelled demonstration readings. The standalone Swift and Python readers are joined by an independent browser reader and local creator. Creation accepts a PDF, source declarations and two human or AI interpretations. It includes no live model call, signatures, encryption, voice notes, real social journey, app integration or production format release.
 
 ## Public distribution
 
@@ -33,8 +33,16 @@ The static website includes a local JavaScript importer for the standalone two-r
 
 ## Local browser import
 
-Eight isolated browser checks cover drag-in of a changed package, literal rendering of untrusted HTML-shaped text, a local PDF preview, keyboard file selection, exact PDF and context downloads, rejection of unselected and truncated content, the latest-file choice winning a loading race, clearing on reload and narrow-screen layout. See `output/browser-checks.json`.
+The reader checks cover drag-in of a changed package, literal rendering of untrusted HTML-shaped text, a local PDF preview, keyboard file selection, exact PDF, context and .else downloads, rejection of unselected and truncated content, the latest-file choice winning a loading race, clearing on reload and narrow-screen layout. See `output/browser-checks.json`.
 
 After loading the page, the test disconnects the browser from the network. Opening, previewing, rejecting and exporting files all succeed with zero HTTP requests during local use. Downloaded PDF bytes equal the original; the context equals the independent Python projection. The selected `.else` is unchanged. Test fixtures are synthetic and include no private app data.
 
 The browser accepts this experiment's bounded profile only. A failed PDF preview leaves the validated source and context available for export. The PDF preview library's separate license and provenance are recorded in `THIRD_PARTY.md`.
+
+## Local browser creation
+
+The browser suite now has 13 checks. It creates and downloads a .else while offline from a synthetic two-page PDF, declared source information and one human plus one AI interpretation. Python independently parses the actual browser download and produces identical AI context; the local test also checks the Swift reader. Cross-reader tests on both Mac architectures independently validate a JavaScript-writer fixture. The public profile is unchanged.
+
+The saved .else reopens in the browser, previews both pages and exports a PDF exactly equal to the input plus context exactly equal to the independent projection. The draft also permits immediate exact-byte PDF export. Source URLs and HTML-shaped notes remain literal text. Notes retain leading whitespace and line breaks. An invalid creation leaves the draft intact, AI-labelled notes require a generator name, and cancelling returns to the prior valid view.
+
+A synthetic PDF without selectable text is carried unchanged with a clear extraction limitation. Reloading clears an unsaved draft and the local file view. The creation form fits a narrow mobile viewport. Reading, extracting PDF text, creating, previewing and downloading all run with zero HTTP requests after initial page load. The tests use a fresh browser profile and synthetic files, not private app content. Creation is a website feature; the released desktop application remains a reader.
