@@ -12,7 +12,7 @@ The website adds a third independent reader in JavaScript, a local creator and a
 
 ## Try the experiment
 
-- [Read the public specimen in your browser](https://doctorillumination.github.io/else-file-format/).
+- [Open the .else website reader and creator](https://dotelse.app/).
 - [Download the experimental macOS reader](https://github.com/doctorillumination/else-file-format/releases/download/v0.1.0-experiment/Else-Experiment-macOS-universal.zip).
 - [Download the specimen](specimen/One-file-two-readings.else) or [inspect the format](FORMAT.md).
 
@@ -100,9 +100,9 @@ python3 preview.py
 
 Open `http://127.0.0.1:8784/`. The preview has no directory listing or general filesystem routes.
 
-`python3 build_site.py` regenerates the static website in `docs/`. GitHub Pages serves this directory. The public sample is embedded, while chosen files are decoded locally by JavaScript. The bundled PDF renderer and worker load with the page. No server-side Python, account, analytics, external CDN or remote PDF fetch is needed.
+`python3 build_site.py` regenerates the static website in `docs/`. Cloudflare Pages serves this directory at [dotelse.app](https://dotelse.app/), with automatic deployments from `main`. [GitHub Pages](https://doctorillumination.github.io/else-file-format/) remains a fallback. The public sample is embedded, while chosen files are decoded locally by JavaScript. The bundled PDF renderer and worker load with the page. No server-side Python, account, analytics, external CDN or remote PDF fetch is needed.
 
-The site is also prepared for Git-connected Cloudflare hosting at `dotelse.app`. The checked-in Wrangler configuration serves only `docs/`, with no application server. See [deployment settings and verification](DEPLOYMENT.md). A configured repository is not confirmation that the custom domain has deployed.
+See [deployment settings and live verification](DEPLOYMENT.md). The checked-in Wrangler configuration supports an optional Workers deployment; the production site uses Pages with no application server.
 
 To run the isolated browser checks, with Node.js 20 or later:
 

@@ -51,6 +51,16 @@ A synthetic PDF without selectable text is carried unchanged with a clear extrac
 
 The current browser suite has 18 checks. The landing page opens the public sample only when requested. Editing preloads both interpretations, roles, contributor kinds, generators and the source declaration. Cancelling returns to the validated original. Saving downloads a new .else that independently opens in Python and the local Swift reader, with matching AI context. Both interpretations target the new material record; its source description contains the exact prior archive fingerprint. The original package on disk is unchanged, and the edited PDF and text derivative retain the original bytes.
 
-Clipboard export matches the independent AI projection in the isolated test profile. Unsaved work is protected when closing, leaving or replacing a draft. Confirmed closing clears the model, text, form and PDF canvas. Editing and these exports also work offline, with zero application HTTP requests. The home and editor layouts were visually inspected. Cloudflare configuration publishes only the public docs directory; actual domain deployment requires separate live verification as described in DEPLOYMENT.md.
+Clipboard export matches the independent AI projection in the isolated test profile. Unsaved work is protected when closing, leaving or replacing a draft. Confirmed closing clears the model, text, form and PDF canvas. Editing and these exports also work offline, with zero application HTTP requests. The home and editor layouts were visually inspected. Cloudflare configuration publishes only the public docs directory.
 
-Wrangler 4.149.0 completed a local deployment dry-run, reading 16 files from docs and excluding the source tree, test tooling and local output. No live Cloudflare deployment or custom-domain connection is implied by this check.
+Wrangler 4.149.0 completed a local deployment dry-run, reading 16 files from docs and excluding the source tree, test tooling and local output. This checks the optional Workers configuration. Production is hosted separately by Cloudflare Pages.
+
+## Live custom domain
+
+Cloudflare Pages deployed commit `88ce83b` from `main`. Its GitHub connection has automatic production deployments enabled. `dotelse.app` is active with SSL enabled, and the site was opened successfully in Chrome at `https://dotelse.app/`.
+
+The live site's public sample was edited and saved as a new .else. Python and Swift independently recovered the same edited model and AI context. The original PDF and source-text derivative were unchanged, the second interpretation and contributor attribution were retained, and the source description included the prior archive's exact SHA-256 fingerprint. This remains an unsigned textual revision reference, not signed lineage.
+
+The original PDF and AI context were downloaded from the actual custom-domain reader controls. The PDF matched the original bytes, with SHA-256 `929563e826f1f56ab210fdf4cd0f62418f9ef1e921025b33c70b8e595a0bcff2`. The downloaded Markdown matched the independent Python and Swift context exactly. All 14 publicly served files matched committed `docs/` bytes over HTTPS with certificate verification enabled. The live response contained the expected content policy, privacy headers and cache revalidation.
+
+Local evidence is saved in `output/Dotelse-live-download-verification.json`, `output/Dotelse-live-assets-verification.json` and `output/Dotelse-app-live.png`. These checks complement the 27 format checks and 18 isolated browser checks; the local test evidence is not part of the published site.

@@ -2,25 +2,37 @@
 
 The site is static. All reading, PDF extraction, creation and editing happen in the visitor's browser. Cloudflare serves the public application assets and sample only. There is no upload handler or server-side AI service.
 
-## Connect the GitHub repository
+## Production deployment
 
-Recommended: Cloudflare Workers with Git integration. Create the `dotelse` Worker from `doctorillumination/else-file-format`, using production branch `main` and the repository root. The checked-in `wrangler.jsonc` identifies the public asset directory and custom domain.
+The site is live at [dotelse.app](https://dotelse.app/), hosted by the Git-connected Cloudflare Pages project `dotelse`. Its default address is [dotelse.pages.dev](https://dotelse.pages.dev/). Production builds use these settings:
 
-Build command: `python3 build_site.py`
+| Setting | Value |
+| --- | --- |
+| Repository | `doctorillumination/else-file-format` |
+| Production branch | `main` |
+| Framework preset | None |
+| Root directory | Repository root |
+| Build command | `python3 build_site.py` |
+| Build output directory | `docs` |
+| Custom domain | `dotelse.app` |
 
-Deploy command: `npx wrangler@4.149.0 deploy`
+Automatic production deployments are enabled. The custom domain is active with SSL enabled, and the apex DNS record points to `dotelse.pages.dev`. Pages uses its existing GitHub connection and does not need a deployment token in this repository. Pages does not use `wrangler.jsonc` for this deployment.
 
-Wrangler's build hook also rebuilds the site. If the Cloudflare build field is left empty, its deploy command still runs that hook. Use Node.js 22 or later and Python 3.9 or later. No deployment secrets belong in this repository.
+Only `docs/` is published. Never select the repository root as the output directory: it contains source, test tooling and local build output. The committed `docs/` is also ready to serve without a build step. GitHub Actions checks that it matches `build_site.py` and the website sources.
 
-Only `docs/` is uploaded. Never select the repository root as the asset directory: it contains source, test tooling and local build output. The configuration binds the Worker to the already owned `dotelse.app` domain. Cloudflare must have access to that domain's zone in the selected account.
+`docs/_headers` configures the local-only browser policy, framing restrictions, privacy headers and cache revalidation. GitHub Pages remains available at [the fallback address](https://doctorillumination.github.io/else-file-format/).
 
-An authenticated Cloudflare account and its GitHub repository connection are required to create the project. If Cloudflare needs additional repository access, grant only this public repository. Once connected, commits to `main` deploy automatically.
+## Optional Workers deployment
 
-## Cloudflare Pages alternative
+The checked-in `wrangler.jsonc` supports a separate Workers static-assets deployment. It is an alternative configuration, not the active production host. Do not deploy it to the same custom domain while the Pages domain connection is active.
 
-The same static directory can be hosted by a Git-connected Pages project named `dotelse`. Use framework preset None, production branch `main`, build command `python3 build_site.py`, output directory `docs`, and the repository root. Add `dotelse.app` through the project's Custom domains tab. Pages does not use `wrangler.jsonc` for this deployment.
+For a separate Worker, use the repository root, Node.js 22 or later, Python 3.9 or later, and deploy command `npx wrangler@4.149.0 deploy`. Wrangler's build hook runs `python3 build_site.py` and serves only `docs/`. GitHub Actions verifies this optional configuration with a local dry-run. No deployment secrets belong in this repository.
 
-The committed `docs/` is also ready to serve without a build step. GitHub Actions checks that it matches `build_site.py` and the website sources. `docs/_headers` configures the local-only browser policy, framing restrictions, privacy headers and cache revalidation on either Cloudflare static-assets host.
+## Live verification
+
+On October 11, 2026, the production deployment of commit `88ce83b` was opened at `https://dotelse.app/` in Chrome. The public sample was edited and the new .else, original PDF and AI context were downloaded through the actual reader controls. Python and Swift independently opened the edited package with matching model and context. Its PDF and source-text derivative were unchanged, the second interpretation and all contributor labels were retained, and the source declaration included the prior archive fingerprint.
+
+All 14 publicly served files, including the HTML, CSS, JavaScript, renderer, sample and icon, matched the committed `docs/` bytes over HTTPS with certificate verification enabled. The content policy, privacy headers and cache revalidation were present in the live response. See [the verification record](VERIFICATION.md) for the local creation and offline checks.
 
 ## Verify a deployment
 
