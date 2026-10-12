@@ -22,7 +22,7 @@ def main():
     html = site_page(model, pdf)
     for section in ['about', 'desktop']:
         html = re.sub(r'<section class="' + section + r'".*?</section>', '', html, flags=re.S)
-    html = html.replace('<a href="#about">About the format</a><a href="#desktop">Desktop reader</a>',
+    html = html.replace('<a href="#about">About the format</a><a href="#desktop">Desktop app</a>',
                         '<a href="https://dotelse.app/">Website</a>')
     html = html.replace('<link rel="stylesheet" href="site.css">',
                         '<link rel="stylesheet" href="site.css"><link rel="stylesheet" href="desktop.css">')

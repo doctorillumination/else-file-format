@@ -22,6 +22,8 @@ Only `docs/` is published. Never select the repository root as the output direct
 
 `docs/_headers` configures the local-only browser policy, framing restrictions, privacy headers and cache revalidation. GitHub Pages remains available at [the fallback address](https://doctorillumination.github.io/else-file-format/).
 
+The desktop download buttons point to tested packages in [release v0.2.0-experiment](https://github.com/doctorillumination/else-file-format/releases/tag/v0.2.0-experiment). Those files are served by GitHub Releases. Cloudflare still publishes only `docs/`; it does not install Electron, package desktop applications or receive selected files. Desktop build dependencies and output remain separate from the static website.
+
 ## Optional Workers deployment
 
 The checked-in `wrangler.jsonc` supports a separate Workers static-assets deployment. It is an alternative configuration, not the active production host. Do not deploy it to the same custom domain while the Pages domain connection is active.

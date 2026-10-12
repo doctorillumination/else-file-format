@@ -64,3 +64,23 @@ The live site's public sample was edited and saved as a new .else. Python and Sw
 The original PDF and AI context were downloaded from the actual custom-domain reader controls. The PDF matched the original bytes, with SHA-256 `929563e826f1f56ab210fdf4cd0f62418f9ef1e921025b33c70b8e595a0bcff2`. The downloaded Markdown matched the independent Python and Swift context exactly. All 14 publicly served files matched committed `docs/` bytes over HTTPS with certificate verification enabled. The live response contained the expected content policy, privacy headers and cache revalidation.
 
 Local evidence is saved in `output/Dotelse-live-download-verification.json`, `output/Dotelse-live-assets-verification.json` and `output/Dotelse-app-live.png`. These checks complement the 27 format checks and 18 isolated browser checks; the local test evidence is not part of the published site.
+
+## Desktop authoring, October 12, 2026
+
+Dotelse 0.2 bundles the existing JavaScript reader, writer, editor and PDF renderer in an offline desktop shell. The two-readings wire profile is unchanged. The earlier Swift macOS reader is preserved in its original release and source files; Dear Elsewhere and Carry code was not changed.
+
+The desktop suite has 11 integration checks. It opens a .else through a launch argument, creates from a synthetic two-page PDF, saves an edited copy, and independently checks the actual written file and context with Python. Original PDF bytes, text derivatives, the second interpretation and contributor attribution are retained. Revision references contain the exact earlier archive fingerprint, while input files remain unchanged.
+
+Native-dialog responses are simulated in the automated suite while the real read and write handlers run. Cancelling a save keeps the new package marked unsaved. Closing or replacing unsaved work is protected. Editing cancellation restores the validated original. PDF, Markdown and .else exports match their selected bytes exactly. Unselected private content is rejected without replacing the open file.
+
+The suite checks renderer sandboxing, context isolation, disabled Node access, the small preload bridge, rejected network requests, blocked arbitrary file URLs, allowlisted bundled assets and safe export names. The PDF drag bridge hands an exact ordinary PDF copy to the native drag API. A physical destination-folder drop is not claimed by that automated check.
+
+Source and packaged application checks passed on Windows x64, Linux x64 and Apple silicon macOS. The actual universal Mac ZIP was also extracted, signature-checked and exercised on an Intel Mac. Both executable architectures were verified. The [platform build record](https://github.com/doctorillumination/else-file-format/actions/runs/38276676926) contains the first complete pass; the release workflow repeats the checks for its exact tag before publishing.
+
+The packaged Mac app was separately operated through its real interface and native macOS dialogs. Its edited .else, original PDF and AI context were saved to local verification output. Python and the original Swift reader independently matched the edited model and context. The PDF SHA-256 remains `929563e826f1f56ab210fdf4cd0f62418f9ef1e921025b33c70b8e595a0bcff2`. Evidence is in `output/Desktop-native-verification.json` and `output/Desktop-native-proof.png`.
+
+The 27 format checks and 18 browser checks still pass after the shared reader changes. Platform package execution and automated checks are distinct from manual installation on arbitrary Windows or Linux machines. macOS distribution is ad hoc signed, without Apple notarization; the Windows installer has no publisher certificate. Release fingerprints are byte-integrity records, not identity signatures.
+
+The [exact tagged build](https://github.com/doctorillumination/else-file-format/actions/runs/38277546064) passed all four platform jobs at commit `28cee19318e3362f8f400256f8523d48e2c9385e`. Its initial publication step rejected incorrect Linux filename assumptions. The corrected publisher reused those unchanged tested artifacts, first verifying the source build against the existing tag and each passing platform job. The [publication run](https://github.com/doctorillumination/else-file-format/actions/runs/38278860106) succeeded.
+
+[Release v0.2.0-experiment](https://github.com/doctorillumination/else-file-format/releases/tag/v0.2.0-experiment) contains the universal Mac ZIP, Windows x64 installer, Linux x86_64 AppImage, Linux amd64 Debian package and SHA256SUMS.txt. All four packages are public and uploaded. Their GitHub asset SHA-256 digests match the downloaded fingerprint file. Local read-back evidence is in `output/release-public-verification/verified.json`.

@@ -10,13 +10,19 @@ This first standalone experiment contains **one PDF, two interpretations and two
 
 The website adds a third independent reader in JavaScript, a local creator and an editor, using the same bounded format and the same selected AI context.
 
+The Dotelse desktop app bundles that reader and authoring engine for macOS, Windows and Linux. It adds native open and save dialogs, .else file associations and an original-PDF drag control, with no upload or online service.
+
 ## Try the experiment
 
 - [Open the .else website reader and creator](https://dotelse.app/).
-- [Download the experimental macOS reader](https://github.com/doctorillumination/else-file-format/releases/download/v0.1.0-experiment/Else-Experiment-macOS-universal.zip).
+- [Download Dotelse for macOS](https://github.com/doctorillumination/else-file-format/releases/download/v0.2.0-experiment/Dotelse-0.2.0-macOS-universal.zip).
+- [Download Dotelse for Windows x64](https://github.com/doctorillumination/else-file-format/releases/download/v0.2.0-experiment/Dotelse-0.2.0-Windows-x64-Setup.exe).
+- [Download Dotelse for Linux x64](https://github.com/doctorillumination/else-file-format/releases/download/v0.2.0-experiment/Dotelse-0.2.0-Linux-x86_64.AppImage) or the [Debian package](https://github.com/doctorillumination/else-file-format/releases/download/v0.2.0-experiment/Dotelse-0.2.0-Linux-amd64.deb).
 - [Download the specimen](specimen/One-file-two-readings.else) or [inspect the format](FORMAT.md).
 
-The macOS download contains Apple silicon and Intel builds targeting macOS 14 or later. It is ad hoc signed and has not been notarized by Apple. Gatekeeper may block a downloaded build. Building from source is also available below.
+The macOS download is universal for Apple silicon and Intel, requiring macOS 13 or later. It uses a local ad hoc signature and is not notarized by Apple. The Windows installer has no publisher certificate. These experimental distributions may be flagged by normal platform checks. [Installation and source builds](desktop/README.md) are documented separately. The [earlier Swift Mac reader](https://github.com/doctorillumination/else-file-format/releases/download/v0.1.0-experiment/Else-Experiment-macOS-universal.zip) remains available.
+
+In Dotelse, choose **Choose PDF or .else file** or drop a file onto the window. A PDF starts creation; a .else opens for reading or editing. Add source information and two interpretations, then save through the operating system's dialog. **Edit context** saves an edited copy with the same original PDF and text derivative. **Save original PDF**, **Save AI context** and **Save .else** use native save dialogs. Cancelling a save keeps the new package available and marked unsaved. Closing or replacing unsaved work asks before discarding it. The app works offline from its first launch.
 
 On the website, drag a `.else` file onto the page or choose **Choose PDF or .else file**. A supported file opens entirely on your device. Choose **Save original PDF**, **Save AI context** or **Save .else** to export without changing the package. The PDF remains an ordinary, exact-byte PDF.
 
@@ -26,15 +32,15 @@ The site starts with a simple landing page. **Try a sample** opens the public sp
 
 To create a file, drop one PDF. Add a title, its original creator and where it came from, then add two interpretations with contributor names. Each interpretation is explicitly labelled human or AI; machine-written words also require a tool or model name. Choose **Save .else locally** to download the package and open it in the reader. The original PDF can be saved directly from the draft or pulled out of the finished file.
 
-Creation supports PDFs up to 12 MiB and 200 pages, with up to 65,536 characters of selectable text. Text is extracted locally with bundled PDF.js for the AI view, without OCR or summarization. A PDF with no selectable text is carried unchanged, with an explicit unavailable-text notice. Password-protected PDFs are unsupported. Source links remain text and are never fetched. The file uses the existing unsigned experimental profile, so the native and Python readers can open it too. Creation currently lives in the website; the desktop app remains a reader.
+Creation supports PDFs up to 12 MiB and 200 pages, with up to 65,536 characters of selectable text. Text is extracted locally with bundled PDF.js for the AI view, without OCR or summarization. A PDF with no selectable text is carried unchanged, with an explicit unavailable-text notice. Password-protected PDFs are unsupported. Source links remain text and are never fetched. The file uses the existing unsigned experimental profile, so the native and Python readers can open it too. Creation and editing are available in both the website and Dotelse desktop app.
 
 The browser validates the archive, references, hashes and selected records before replacing the view. It accepts the standalone `two-readings/0.1-experimental` profile, up to 64 MiB; other Dear Elsewhere or Carry formats remain separate. An invalid file leaves the previous valid file open with a clear error.
 
 Once the page has loaded, opening, text extraction, creation, editing, PDF preview and all exports work offline. Selected bytes and unsaved drafts stay in tab memory. The reader performs no upload, AI call, background storage or tracking. Confirmed reloading returns to the landing page and clears the draft. The PDF preview uses a bundled local renderer, with no active document scripts or forms; see [third-party attribution](THIRD_PARTY.md).
 
-Linux and Windows desktop apps are planned. The independent Python command-line reader already uses only the standard library, making it portable across those systems. Desktop packaging and platform verification remain separate work.
+Desktop downloads are built on their respective platforms and checked as packaged executables. The universal Mac ZIP is also checked on an Intel Mac. Linux AppImage and Debian packages and the Windows installer target x64. The independent Python command-line reader continues to use only the standard library.
 
-## In the macOS reader
+## In the earlier Swift macOS reader
 
 1. Open **Else Experiment.app**. The sample loads automatically.
 2. Read the PDF and both interpretations beside it.
@@ -47,7 +53,20 @@ The PDF and both interpretations are AI-authored demonstration material, not wor
 
 Native Save original and browser download have been verified byte for byte. The AppKit drag starts a copy operation, but the final Finder destination still needs a direct manual check. See [verification](VERIFICATION.md).
 
-## Build the macOS reader
+## Build the desktop app
+
+Use Node.js 24 or later and Python 3.9 or later:
+
+```sh
+npm ci
+npm ci --prefix desktop
+python3 desktop/build_desktop.py
+npm start --prefix desktop
+```
+
+See [desktop build and verification details](desktop/README.md) for platform packaging, native save behavior and isolation boundaries. Desktop dependencies are separate from the static website build. The packages bundle only public application assets and the sample. There is no background updater.
+
+## Build the earlier macOS reader
 
 Requirements: macOS, Apple command line developer tools with Swift 5.9 or newer, and Python 3.9 or newer. The app uses AppKit, PDFKit and CryptoKit. The Python reader has no third-party dependencies.
 
@@ -138,7 +157,7 @@ The AI projection is selected task data. It includes source words, contributor r
 
 ## The next experiment
 
-The website provides local reading, creation and editing across desktop platforms. Future work can broaden the accepted profiles, material types and accessibility of PDF previews. Linux and Windows desktop packages would add native drag-out, offline file opening and file associations.
+The website and Dotelse desktop app provide local reading, creation and editing. Future work can broaden the accepted profiles, material types and accessibility of PDF previews. Additional CPU architectures, publisher signing, notarization and broader installation testing are separate distribution work.
 
 Future collaboration can add written or spoken responses, with each contribution linked to its input revision and kept distinct from the source. Signatures, transport, live AI participation, revision merging, Carry events and Dear Elsewhere arrivals require their own experiments and human decisions. None is represented as implemented here.
 
