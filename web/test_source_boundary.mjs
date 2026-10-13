@@ -14,6 +14,8 @@ assert.ok(source.headers.get('Content-Security-Policy').includes('frame-ancestor
 assert.equal(calls[0], 'https://dotelse.app/source/live-post');
 assert.equal((await worker.fetch(new Request('https://dotelse.app/mixed.html'), env)).headers.get('X-Frame-Options'), 'DENY');
 assert.equal((await worker.fetch(new Request('https://dotelse.app/mixed.html', {method:'POST',body:'PRIVATE_DATA_SENTINEL'}), env)).status,405);
+assert.equal((await worker.fetch(new Request('https://sources.dotelse.app/live-video.html'), env)).status,200);
+assert.equal(boundary.inlineSourceURL('https://sources.dotelse.app/live-video.html'),true);
 const main = {url:'app://else/mixed.html',parent:null}, sourceFrame = {url:'https://sources.dotelse.app/live-post.html#id=20',parent:main};
 const descendant = {url:'https://platform.twitter.com/embed/Tweet.html',parent:sourceFrame};
 assert.equal(boundary.inlineRequest({url:'https://example.invalid/private',resourceType:'xhr',frame:main}), false);

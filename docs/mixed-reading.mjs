@@ -17,7 +17,7 @@ function time(seconds) { const n = Math.max(0, Math.floor(seconds || 0)); return
 
 // Only public source identifiers enter the remote frames. Archive bytes and notes remain here.
 export function readingView({ model, head, root, save, blobURL, status, edit, exportPackage, selectEdition, sourceControl, desktop }) {
-  const edition = model.editions[head], cleanups = [], tasks = [], frames = [], audios = [];
+  const edition = model.editions[head], cleanups = [], tasks = [], frames = [], audios = [], playingFrames = new Set(), videoNonces = new Map();
   let disposed = false, fullVideo = null, oldInert = [], videoFocus = null, pdfTask = null, pdfDoc = null, pdfMaterial = null, page = 1, pageBusy = false;
   const act = fn => Promise.resolve().then(fn).catch(e => { if (!disposed) status(e.message, true); });
   const button = (text, fn, cls = 'quiet-button') => { const n = el('button', text, cls); n.type = 'button'; n.onclick = () => act(fn); return n; };
@@ -91,7 +91,7 @@ export function readingView({ model, head, root, save, blobURL, status, edit, ex
   async function openPDF(m) { pauseMedia(); pdfMaterial = m; page = 1; pdfTitle.textContent = m.title; pdfPages.replaceChildren(el('p','Preparing original PDF…')); pdfDialog.showModal(); const task = pdfTask = newPDF(model.blob(m.blob)); try { const doc = await task.promise; if (disposed || task !== pdfTask) return; if (doc.numPages > 200) throw Error('Save the original to read PDFs over 200 pages.'); pdfDoc = doc; await drawPage(); } catch(e) { if (!disposed && task === pdfTask) pdfPages.replaceChildren(el('p', e.message + ' The original is still available to save.')); } }
   function header(kind,title,author,fn) { const n = el('div',undefined,'source-head'), symbol = el('span',undefined,'source-symbol'), info = el('div',undefined,'source-info'); symbol.append(icon(kind)); info.append(el('h3',title),el('p',author,'caption')); n.append(symbol,info,button('Details',fn,'source-more')); return n; }
   function note(c) { const n = el('div',undefined,'reading-note'), author = el('div',undefined,'note-author'); author.append(el('span',c.author.name),el('span',c.author.kind === 'ai' ? 'AI proposal' : 'Declared contribution',c.author.kind === 'ai' ? 'ai-label' : '')); n.append(author,el('p',model.text(c.text))); return n; }
-  function videoCommand(frame, command) { frame.contentWindow?.postMessage(JSON.stringify({event:'command',func:command,args:[]}), 'https://www.youtube-nocookie.com'); }
+  function videoCommand(frame, command) { if (command === 'pauseVideo' && !playingFrames.has(frame)) return; frame.contentWindow?.postMessage({type:'pause',nonce:videoNonces.get(frame)}, 'https://sources.dotelse.app'); }
   function pauseMedia(except = null) { audios.forEach(a => { if (a !== except) a.pause(); }); frames.forEach(f => { if (f !== except) videoCommand(f,'pauseVideo'); }); }
   const observe = new IntersectionObserver(entries => { for (const e of entries) if (!e.isIntersecting) { if (e.target.tagName === 'AUDIO') e.target.pause(); else videoCommand(e.target,'pauseVideo'); } }); cleanups.push(() => observe.disconnect());
   function voice(c) {
@@ -125,13 +125,12 @@ export function readingView({ model, head, root, save, blobURL, status, edit, ex
       const meta = el('div',undefined,'under-media'); meta.append(el('span',navigator.onLine ? 'Live source + saved reference' : 'Saved reference, offline'),sourceControl(m)); article.append(meta);
     } else if(m.kind === 'youtube') {
       const wrap = el('div',undefined,'video-container'), frame = el('div',undefined,'video-frame'), iframe = el('iframe'); iframe.title = m.title + ', YouTube passage'; iframe.referrerPolicy = 'strict-origin-when-cross-origin'; iframe.allow = 'encrypted-media; fullscreen; picture-in-picture'; iframe.allowFullscreen = true; iframe.setAttribute('sandbox','allow-scripts allow-same-origin allow-presentation');
-      if(navigator.onLine) iframe.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(new URL(m.url).searchParams.get('v')) + '?' + new URLSearchParams({start:m.start,end:m.end,playsinline:1,autoplay:0,rel:0,enablejsapi:1,origin:location.origin});
+      const nonce = crypto.randomUUID(), sourceURL = new URL('https://sources.dotelse.app/live-video.html'); sourceURL.hash = new URLSearchParams({id:new URL(m.url).searchParams.get('v'),start:m.start,end:m.end,nonce}); videoNonces.set(iframe,nonce); if(navigator.onLine) iframe.src = sourceURL.href;
       frame.append(iframe); frames.push(iframe); observe.observe(iframe); wrap.append(frame);
       const meta = el('div',undefined,'under-media'); meta.append(el('span',time(m.start) + ' to ' + time(m.end) + ' / YouTube passage'),button('Expand video',() => fullVideo ? closeVideo() : expandVideo(wrap))); wrap.append(meta); article.append(wrap);
       if(!navigator.onLine) article.append(el('p','Video is offline. The saved passage and source remain below.','video-caption'));
       if(m.excerpt) article.append(el('p',model.text(m.excerpt),'video-caption')); article.append(sourceControl(m));
-      const listener = event => { if(event.source !== iframe.contentWindow || event.origin !== 'https://www.youtube-nocookie.com') return; let data; try { data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data; } catch { return; } if(data?.info?.playerState === 1) pauseMedia(iframe); }; window.addEventListener('message',listener); cleanups.push(() => window.removeEventListener('message',listener));
-      iframe.onload = () => iframe.contentWindow?.postMessage(JSON.stringify({event:'listening',id:id}), 'https://www.youtube-nocookie.com');
+      const listener = event => { if(event.source !== iframe.contentWindow || event.origin !== sourceURL.origin || event.data?.nonce !== nonce) return; if(event.data.type === 'state' && event.data.state === 1) { playingFrames.add(iframe); pauseMedia(iframe); } else if(event.data.type === 'state' && [0,2].includes(event.data.state)) playingFrames.delete(iframe); }; window.addEventListener('message',listener); cleanups.push(() => window.removeEventListener('message',listener));
     }
     for(const cid of edition.contexts) { const c = model.contexts[cid]; if(c.material === id && c.text) article.append(note(c)); } feed.append(article);
   }
