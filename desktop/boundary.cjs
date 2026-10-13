@@ -20,7 +20,7 @@ function inlineSourceURL(address) {
   try {
     const u = new URL(address);
     if (u.protocol !== 'https:' || u.username || u.password || u.port) return false;
-    return (u.hostname === 'sources.dotelse.app' && u.pathname === '/live-post.html' && !u.search) ||
+    return (u.hostname === 'sources.dotelse.app' && /^\/live-(?:post|video)\.html$/.test(u.pathname) && !u.search) ||
       (u.hostname === 'www.youtube-nocookie.com' && /^\/embed\/[\w-]{11}$/.test(u.pathname));
   } catch { return false; }
 }
