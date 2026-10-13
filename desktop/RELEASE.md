@@ -3,3 +3,5 @@ The .else visual reader brings the original PDF, live X post, YouTube passage, i
 Creation and editing stay local. New editions preserve earlier signatures. Original PDF and audio exports retain their exact bytes, and the desktop app supports dragging the ordinary PDF back out. Live sources receive public references only in separate frames.
 
 These are experimental, unsigned distribution packages. macOS supports Apple Silicon and Intel; Windows uses an x64 installer; Linux has AppImage and Debian packages.
+
+Version 0.4.1 keeps the expanded video's close control usable in the desktop app and gives live X posts enough space to render before replacing the saved excerpt. Saved references remain available when a live provider cannot load.

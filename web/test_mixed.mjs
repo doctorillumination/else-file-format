@@ -106,6 +106,19 @@ try {
     const destination = filePath(new URL('Desktop-created.else', out)); await electron.evaluate(({ dialog }, filePath) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath }); }, destination);
     await fillNew(page, 'macOS desktop'); await page.getByRole('button', { name: 'Save .else copy', exact: true }).click(); await page.getByText('Saved locally. Source files and earlier contributions stay intact.', { exact: true }).waitFor();
     const m = await readMixed(await readFile(destination)); assert.equal(Object.values(m.materials).find(v => v.kind === 'youtube').start, 2); check('macOS application creates the same profile through its native save bridge');
+    await page.getByRole('button', { name: 'Expand original PDF: Original PDF', exact: true }).click();
+    await page.locator('.pdf-dialog').getByText('Page 1 of 2', { exact: true }).waitFor();
+    await page.locator('.pdf-dialog').getByRole('button', { name: 'Done', exact: true }).click();
+    const videoFrame = await page.locator('.video-frame > iframe').getAttribute('src');
+    await page.getByRole('button', { name: 'Expand video', exact: true }).click();
+    assert.equal(await page.locator('.video-frame > iframe').getAttribute('src'), videoFrame);
+    assert.equal(await page.locator('.video-placeholder button').textContent(), 'Play passage online');
+    await page.getByRole('button', { name: 'Close expanded video', exact: true }).click();
+    assert.equal(await page.locator('.reading-tools').evaluate(n => n.inert), false);
+    await page.getByRole('button', { name: 'Expand video', exact: true }).click();
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Expand video', exact: true }).waitFor();
+    check('macOS PDF and video expand, the visible close control works with a source placeholder, and Escape restores the reading');
     await electron.evaluate(({ dialog }, filePath) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [filePath] }); }, filePath(new URL('Response.else', out)));
     await page.getByRole('button', { name: 'Open .else', exact: true }).click(); await details(page, 'Proofs'); await page.getByText('Synthetic peer', { exact: true }).first().waitFor(); await closeDetails(page);
     if (process.env.ELSE_PHONE_FILE) {
