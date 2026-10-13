@@ -1,7 +1,10 @@
 import { readMixed, include, newEdition, mixedContext, base64, need } from './mixed-format.mjs';
-import { extractPDFText, worker as localWorker } from './preview.mjs';
+import { extractPDFText } from './preview.mjs';
+import { readingView } from './mixed-reading.mjs';
+import { sample } from './mixed-sample.mjs';
 
 let model = null, head = null, dirty = false, unsaved = false, busy = false, selectedPDF = null, selectedVoice = null, urls = [], revision = 0;
+let disposeReading = () => {};
 const enc = new TextEncoder();
 const desktop = window.elseDesktop;
 const $ = id => document.getElementById('mixed-' + id);
@@ -11,7 +14,7 @@ function field(id, label, type = 'text') { const l = el('label', label); l.htmlF
 function button(text, fn, cls = 'secondary') { const b = el('button', text, cls); b.type = 'button'; b.onclick = () => run(fn); return b; }
 async function run(fn) { if (busy) return; busy = true; try { await fn(); } catch (e) { status(e.message, true); } finally { busy = false; } }
 function blobURL(data, mime) { const u = URL.createObjectURL(new Blob([data], { type: mime })); urls.push(u); return u; }
-function clearURLs() { urls.forEach(URL.revokeObjectURL); urls = []; }
+function clearURLs() { disposeReading(); disposeReading = () => {}; urls.forEach(URL.revokeObjectURL); urls = []; }
 async function mayReplace() { if (!dirty && !unsaved) return true; return desktop ? desktop.confirmDiscard() : confirm('Discard unsaved changes? Save a .else copy to keep them.'); }
 async function save(bytes, name, kind) {
   if (desktop) return (await desktop.saveFile({ bytes, name, kind })).saved;
@@ -35,21 +38,23 @@ function mount() {
   const actions = el('div', undefined, 'actions');
   const picker = el('input'); picker.type = 'file'; picker.accept = '.else'; picker.id = 'mixed-open-input'; picker.hidden = true;
   picker.onchange = () => run(async () => { if (picker.files[0]) await openFile(picker.files[0]); picker.value = ''; });
-  actions.append(button('Open .else', async () => { if (desktop) { const f = await desktop.chooseFile(); if (f) await launchMixed(f.bytes, f.name); } else picker.click(); }), button('New composition', async () => { if (await mayReplace()) { model = null; head = null; delete window.mixedReader; selectedPDF = null; selectedVoice = null; dirty = false; unsaved = false; editor(); } }), button('Close file', async () => { if (!await mayReplace()) return; clearURLs(); model = null; delete window.mixedReader; dirty = false; unsaved = false; root.remove(); for (const child of [...document.body.children]) child.hidden = false; if (!document.querySelector('#drop-zone')) location.reload(); }));
+  actions.append(button('Example', () => launchMixed(Uint8Array.from(atob(sample), c => c.charCodeAt(0)), 'Public reading example')), button('Open .else', async () => { if (desktop) { const f = await desktop.chooseFile(); if (f) await launchMixed(f.bytes, f.name); } else picker.click(); }), button('New composition', async () => { if (await mayReplace()) { model = null; head = null; delete window.mixedReader; selectedPDF = null; selectedVoice = null; dirty = false; unsaved = false; editor(); } }), button('Close file', async () => { if (!await mayReplace()) return; clearURLs(); model = null; delete window.mixedReader; dirty = false; unsaved = false; root.remove(); for (const child of [...document.body.children]) child.hidden = false; if (!document.querySelector('#drop-zone')) location.reload(); }));
   root.append(actions, picker);
   const drop = el('div', 'Drop a .else to open it, or a PDF and a voice recording to begin.', 'drop'); drop.id = 'mixed-drop';
   drop.ondragover = e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; };
   drop.ondrop = e => { e.preventDefault(); void run(async () => { const files = [...e.dataTransfer.files]; if (files.length === 1 && /\.else$/i.test(files[0].name)) await openFile(files[0]); else { if (!await mayReplace()) return; const pdf = files.find(f => /\.pdf$/i.test(f.name)), voice = files.find(f => /\.(wav|m4a|mp3|ogg|webm)$/i.test(f.name)); need(pdf && files.length <= 2 && files.every(f => f === pdf || f === voice), 'Drop one PDF and optionally one voice recording.'); model = null; head = null; dirty = true; unsaved = false; editor(); selectedPDF = pdf; selectedVoice = voice || null; status('Selected ' + files.map(f => f.name).join(' and ') + '. Add source information below.'); } }); };
   root.append(drop);
-  const s = el('p', 'No upload, automatic source fetch or AI call.', 'muted'); s.id = 'mixed-status'; s.setAttribute('role', 'status'); root.append(s);
+  const s = el('p', 'Files stay local. Live sources load automatically when online.', 'muted'); s.id = 'mixed-status'; s.setAttribute('role', 'status'); root.append(s);
   const content = el('div'); content.id = 'mixed-content'; root.append(content); document.body.append(root);
   window.addEventListener('beforeunload', e => { if (dirty || unsaved) { e.preventDefault(); e.returnValue = ''; } });
   document.body.dataset.mixedState = 'ready';
+  document.addEventListener('dragover', e => { if ([...e.dataTransfer.types].includes('Files')) e.preventDefault(); });
+  document.addEventListener('drop', e => { if (e.dataTransfer.files.length && !e.target.closest('#mixed-drop')) drop.ondrop(e); });
   if (desktop) { desktop.onFile(f => void run(() => launchMixed(f.bytes, f.name))); desktop.onAction(a => { if (document.getElementById('mixed-app')) { if (a === 'save') void run(() => $('form') ? publish() : exportPackage()); if (a === 'edit' && model) editor(); } }); }
 }
 async function openFile(file) { need(file.size <= 64 * 1024 * 1024, 'Choose a .else up to 64 MiB.'); await launchMixed(new Uint8Array(await file.arrayBuffer()), file.name); }
 function editor() {
-  clearURLs(); $('content').replaceChildren(); selectedPDF = null; selectedVoice = null;
+  clearURLs(); $('app').classList.remove('is-reading'); $('content').replaceChildren(); selectedPDF = null; selectedVoice = null;
   const form = el('form'); form.id = 'mixed-form'; form.onsubmit = e => { e.preventDefault(); void run(publish); }; form.oninput = () => { dirty = true; };
   form.append(...field('title', 'Composition title'), ...field('editor', 'Your contributor name'));
   $('content').append(form);
@@ -128,49 +133,10 @@ function sourceControl(a) {
   const link = el('a', title, 'button'); link.href = destination.href; link.target = '_blank'; link.rel = 'noopener noreferrer'; return link;
 }
 function render() {
-  clearURLs(); $('content').replaceChildren(); document.body.dataset.mixedState = 'reading';
-  const e = current(); $('content').append(el('h2', e.title));
-  const actions = el('div', undefined, 'actions'); actions.append(button('Save .else copy', exportPackage, ''), button('Add interpretation', async () => { if (await mayReplace()) editor(); }), button('Save AI context', () => save(enc.encode(mixedContext(model, head)), 'Mixed-context.md', 'md'))); $('content').append(actions);
-  const edition = el('select'); edition.id = 'mixed-edition'; edition.setAttribute('aria-label', 'Edition history');
-  for (const [id, value] of Object.entries(model.editions)) { const o = el('option', value.title + ' / ' + value.editor + ' / ' + id.slice(0, 8)); o.value = id; o.selected = id === head; edition.append(o); } edition.onchange = () => { head = edition.value; render(); }; $('content').append(edition);
-  const grid = el('div', undefined, 'grid'), left = el('section'), right = el('section'); grid.append(left, right); $('content').append(grid);
-  for (const id of e.materials) {
-    const a = model.materials[id], article = el('article'); article.append(el('p', a.kind === 'pdf' ? 'Original included' : 'Reference saved', 'eyebrow'), el('h3', a.title), el('p', a.creator, 'muted'));
-    if (a.kind === 'pdf') {
-      const canvas = el('canvas'); canvas.setAttribute('aria-label', 'Original PDF preview'); article.append(canvas); void pdfPreview(model.blob(a.blob), canvas);
-      article.append(button('Save original PDF', () => save(model.blob(a.blob), a.filename, 'pdf')));
-      if (desktop) { const drag = button('Drag original PDF out', () => {}); drag.draggable = true; drag.ondragstart = ev => { ev.preventDefault(); void desktop.dragPDF({ bytes: model.blob(a.blob), name: a.filename, kind: 'pdf' }); }; article.append(drag); }
-    } else { article.append(el('p', a.url, 'muted')); if (a.kind === 'youtube') article.append(el('p', `Passage: ${a.start} to ${a.end} seconds`)); article.append(sourceControl(a)); }
-    if (a.excerpt) { const d = el('details'); d.append(el('summary', 'Saved text / ' + a.method), el('p', model.text(a.excerpt))); article.append(d); }
-    left.append(article);
-  }
-  for (const id of e.contexts) {
-    const c = model.contexts[id], article = el('article'); article.append(el('p', c.author.kind === 'ai' ? 'AI proposal / ' + c.author.generator : 'Human contribution (declared)', 'eyebrow'), el('h3', c.author.name));
-    if (c.base) article.append(el('p', 'Responding to edition ' + c.base.slice(0, 12), 'muted'));
-    if (c.text) article.append(el('p', model.text(c.text)));
-    if (c.audio) { const audio = el('audio'); audio.controls = true; audio.src = blobURL(model.blob(c.audio), c.mime); audio.preload = 'metadata'; article.append(audio, button('Save original voice', () => save(model.blob(c.audio), c.filename, 'audio'))); }
-    if (c.transcript) article.append(el('small', c.transcriptMethod), el('p', model.text(c.transcript))); right.append(article);
-  }
-  const proofPanel = el('article'); proofPanel.append(el('h3', 'Provenance'));
-  const signatures = model.proofs.filter(p => p.edition === head); proofPanel.append(el('p', signatures.length ? 'This edition has public proofs.' : 'This edition is unsigned. Earlier proofs remain attached to their original editions.'));
-  for (const p of model.proofs) proofPanel.append(el('p', `${p.signer.name}: ${p.purpose}, edition ${p.edition.slice(0, 12)}. ${p.verified ? 'Signature valid. Human identity is not confirmed here.' : p.limitation}`), el('p', p.fingerprint.match(/.{8}/g).join(' '), 'fingerprint'));
-  right.append(proofPanel);
-  const ai = el('details'); const text = el('pre', mixedContext(model, head)); text.id = 'mixed-ai-context'; ai.append(el('summary', 'Selected AI-readable context'), text); $('content').append(ai);
+  clearURLs(); $('content').replaceChildren(); $('app').classList.add('is-reading'); document.body.dataset.mixedState = 'reading';
+  disposeReading = readingView({ model, head, root: $('content'), save, blobURL, status, desktop, sourceControl,
+    edit: async () => { if (await mayReplace()) editor(); }, exportPackage,
+    selectEdition: value => { head = value; render(); } });
   window.mixedReader = { model, head, exportPackage };
 }
-async function pdfPreview(bytes, canvas) {
-  let doc, task;
-  try {
-    const { getDocument } = await import('./vendor/pdf.mjs');
-    task = getDocument({ data: bytes.slice(), worker: localWorker, isEvalSupported: false, enableXfa: false, useWasm: false, useWorkerFetch: false, disableAutoFetch: true, disableStream: true, maxImageSize: 4 * 1024 * 1024 });
-    doc = await task.promise;
-    need(doc.numPages <= 200, 'This PDF exceeds the preview page limit.');
-    let number = 1, rendering = false;
-    const bar = el('div', undefined, 'actions'), label = el('span'), previous = button('Previous PDF page', () => draw(number - 1)), next = button('Next PDF page', () => draw(number + 1));
-    bar.append(previous, label, next); canvas.before(bar);
-    async function draw(pageNumber) { if (rendering || pageNumber < 1 || pageNumber > doc.numPages) return; rendering = true; previous.disabled = next.disabled = true; try { number = pageNumber; const page = await doc.getPage(number), natural = page.getViewport({ scale: 1 }), viewport = page.getViewport({ scale: Math.min(1.2, 1600 / natural.width, 1600 / natural.height) }); canvas.width = viewport.width; canvas.height = viewport.height; await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise; label.textContent = `Page ${number} of ${doc.numPages}`; } finally { rendering = false; previous.disabled = number === 1; next.disabled = number === doc.numPages; } }
-    await draw(1);
-    const observer = new MutationObserver(() => { if (!canvas.isConnected) { observer.disconnect(); void task.destroy(); } }); observer.observe(document.body, { childList: true, subtree: true });
-  } catch { await task?.destroy(); canvas.replaceWith(el('p', 'Save the original PDF to read it in your usual app.')); }
-}
-if (/\/mixed(?:\.html)?\/?$/.test(location.pathname)) { await launchMixed(); if (desktop) { const pending = await desktop.pendingFile(); if (pending) await launchMixed(pending.bytes, pending.name); } }
+if (/\/mixed(?:\.html)?\/?$/.test(location.pathname)) { await launchMixed(location.hash === '#example' ? Uint8Array.from(atob(sample), c => c.charCodeAt(0)) : null, 'Public reading example'); if (desktop) { const pending = await desktop.pendingFile(); if (pending) await launchMixed(pending.bytes, pending.name); } }

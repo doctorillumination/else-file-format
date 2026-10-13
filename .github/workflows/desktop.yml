@@ -67,6 +67,8 @@ jobs:
         run: node desktop/test_desktop.cjs
       - name: Install the mixed-reader browser
         run: npx playwright install chromium
+      - name: Check isolated source boundaries
+        run: node web/test_source_boundary.mjs
       - name: Check mixed browser and desktop exchanges
         if: runner.os != 'Linux'
         env:
@@ -134,7 +136,7 @@ jobs:
           path: output/mac-intel
       - name: Extract and verify the universal Mac download
         run: |
-          ditto -xk output/mac-intel/Dotelse-0.3.0-macOS-universal.zip output/mac-intel
+          ditto -xk output/mac-intel/Dotelse-0.4.0-macOS-universal.zip output/mac-intel
           codesign --verify --deep --strict output/mac-intel/Dotelse.app
           python3 -c "import subprocess; assert set(subprocess.check_output(['xcrun', 'lipo', '-archs', 'output/mac-intel/Dotelse.app/Contents/MacOS/Dotelse'], text=True).split()) == {'arm64', 'x86_64'}"
       - name: Check the universal application on an Intel Mac

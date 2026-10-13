@@ -32,12 +32,15 @@ def main():
     SITE.mkdir(exist_ok=True)
     (SITE / 'index.html').write_text(site_page(model, pdf), encoding='utf-8')
     (SITE / '.nojekyll').write_text('', encoding='utf-8')
+    (SITE / '.assetsignore').write_text('_worker.js\n', encoding='utf-8')
+    shutil.copyfile(ROOT / 'web/_worker.js', SITE / '_worker.js')
     (SITE / 'context.md').write_text(ai_context(model), encoding='utf-8')
     (SITE / model['filename']).write_bytes(pdf)
     shutil.copyfile(ROOT / 'assets/ElseIcon.png', SITE / 'ElseIcon.png')
     shutil.copyfile(ROOT / 'specimen/One-file-two-readings.else', SITE / 'One-file-two-readings.else')
-    for name in ['reader.mjs', 'format.mjs', 'preview.mjs', 'create.mjs', 'site.css', 'mixed.html', 'mixed.css', 'mixed.mjs', 'mixed-format.mjs', 'source-viewer.html', 'source-viewer.mjs']:
+    for name in ['reader.mjs', 'format.mjs', 'preview.mjs', 'create.mjs', 'site.css', 'mixed.html', 'mixed.css', 'mixed.mjs', 'mixed-format.mjs', 'mixed-reading.mjs', 'mixed-reading.css', 'mixed-sample.mjs', 'source-viewer.html', 'source-viewer.mjs']:
         shutil.copyfile(ROOT / 'web' / name, SITE / name)
+    shutil.copytree(ROOT / 'web/source', SITE / 'source', dirs_exist_ok=True)
     (SITE / 'vendor').mkdir(exist_ok=True)
     for name in ['pdf.mjs', 'pdf.worker.mjs', 'PDFJS-LICENSE']:
         shutil.copyfile(ROOT / 'web/vendor' / name, SITE / 'vendor' / name)

@@ -33,9 +33,10 @@ def main():
                         'Saving opens the .else in the reader below. Save a copy to keep your work.')
     html = html.replace('Reloading clears unsaved work.', 'Save a .else copy to keep your work.')
     (DESTINATION / 'index.html').write_text(html, encoding='utf-8')
-    names = ['reader.mjs', 'format.mjs', 'preview.mjs', 'create.mjs', 'site.css', 'mixed.html', 'mixed.css', 'mixed.mjs', 'mixed-format.mjs', 'source-viewer.html', 'source-viewer.mjs']
+    names = ['reader.mjs', 'format.mjs', 'preview.mjs', 'create.mjs', 'site.css', 'mixed.html', 'mixed.css', 'mixed.mjs', 'mixed-format.mjs', 'mixed-reading.mjs', 'mixed-reading.css', 'mixed-sample.mjs', 'source-viewer.html', 'source-viewer.mjs']
     for name in names:
         shutil.copyfile(ROOT / 'web' / name, DESTINATION / name)
+    shutil.copytree(ROOT / 'web/source', DESTINATION / 'source', dirs_exist_ok=True)
     (DESTINATION / 'vendor').mkdir(exist_ok=True)
     for name in ['pdf.mjs', 'pdf.worker.mjs', 'PDFJS-LICENSE']:
         shutil.copyfile(ROOT / 'web/vendor' / name, DESTINATION / 'vendor' / name)

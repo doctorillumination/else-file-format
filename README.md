@@ -16,7 +16,7 @@ This first standalone experiment contains **one PDF, two interpretations and two
 
 The website adds a third independent reader in JavaScript, a local creator and an editor, using the same bounded format and the same selected AI context.
 
-The Dotelse desktop app bundles that reader and authoring engine for macOS, Windows and Linux. It adds native open and save dialogs, .else file associations and an original-PDF drag control, with no upload or online service.
+The Dotelse desktop app bundles that reader and authoring engine for macOS, Windows and Linux. It adds native open and save dialogs, .else file associations and an original-PDF drag control, with no upload service. Mixed editions show live sources in isolated views when online.
 
 ## Try the experiment
 
@@ -127,7 +127,7 @@ Open `http://127.0.0.1:8784/`. The preview has no directory listing or general f
 
 `python3 build_site.py` regenerates the static website in `docs/`. Cloudflare Pages serves this directory at [dotelse.app](https://dotelse.app/), with automatic deployments from `main`. [GitHub Pages](https://doctorillumination.github.io/else-file-format/) remains a fallback. The public sample is embedded, while chosen files are decoded locally by JavaScript. The bundled PDF renderer and worker load with the page. No server-side Python, account, analytics, external CDN or remote PDF fetch is needed.
 
-See [deployment settings and live verification](DEPLOYMENT.md). The checked-in Wrangler configuration supports an optional Workers deployment; the production site uses Pages with no application server.
+See [deployment settings and live verification](DEPLOYMENT.md). A small Pages routing function serves the isolated public source view at sources.dotelse.app. It rejects uploads and cannot access chosen files. Reading, composition, extraction and editing remain local.
 
 To run the isolated browser checks, with Node.js 20 or later:
 
@@ -174,3 +174,9 @@ Future collaboration can add written or spoken responses, with each contribution
 The app's drag gesture uses [AppKit dragging sessions](https://developer.apple.com/documentation/appkit/nsview/begindraggingsession(with:event:source:)) and displays the original with [PDFKit](https://developer.apple.com/documentation/pdfkit/pdfview).
 
 [MIT license](LICENSE) for the experiment. The public specimen and generated icon are included. Bundled PDF.js retains its [Apache 2.0 license](THIRD_PARTY.md).
+
+## Visual mixed reader
+
+Mixed editions use a single reading column: an expandable original PDF, inline X posts and YouTube passages, attributed interpretations beside their material, and a waveform with playback and seek controls for the original voice note. Details opens Sources, History, Proofs and Export. Signatures describe the edition they actually signed. Editing creates a new edition with all earlier bytes and proofs retained. Carry remains the place to review and sign with a phone key.
+
+Original PDFs and voice notes can be saved without their surrounding context. The Mac app also supports dragging the original PDF into another desktop application. The complete selected AI-readable context is available as Markdown. Live provider views receive public identifiers only and cannot reach the reader’s local file bridge. When sources are unavailable, the saved references remain usable.

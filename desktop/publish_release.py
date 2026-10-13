@@ -7,8 +7,8 @@ import subprocess
 
 root = Path(__file__).resolve().parent.parent
 folder = root / 'output/release-downloads'
-expected = ['Dotelse-0.3.0-macOS-universal.zip', 'Dotelse-0.3.0-Windows-x64-Setup.exe',
-            'Dotelse-0.3.0-Linux-x86_64.AppImage', 'Dotelse-0.3.0-Linux-amd64.deb']
+expected = ['Dotelse-0.4.0-macOS-universal.zip', 'Dotelse-0.4.0-Windows-x64-Setup.exe',
+            'Dotelse-0.4.0-Linux-x86_64.AppImage', 'Dotelse-0.4.0-Linux-amd64.deb']
 files = []
 for name in expected:
     matches = list(folder.rglob(name))
@@ -18,9 +18,9 @@ for name in expected:
 checksums = folder / 'SHA256SUMS.txt'
 checksums.write_text(''.join(hashlib.sha256(p.read_bytes()).hexdigest() + '  ' + p.name + '\n' for p in files))
 tag = os.environ.get('ELSE_RELEASE_TAG') or os.environ['GITHUB_REF_NAME']
-if tag != 'v0.3.0-experiment':
+if tag != 'v0.4.0-experiment':
     raise SystemExit('Review the release manifest before publishing another version.')
 subprocess.run(['gh', 'release', 'create', tag, *map(str, files), str(checksums),
                 '--repo', 'doctorillumination/else-file-format', '--prerelease', '--verify-tag',
-                '--title', '.else desktop mixed-material experiment 0.3',
+                '--title', '.else desktop visual reader experiment 0.4',
                 '--notes-file', str(root / 'desktop/RELEASE.md')], check=True)
