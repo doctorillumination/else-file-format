@@ -32,6 +32,7 @@ def main():
     SITE.mkdir(exist_ok=True)
     (SITE / 'index.html').write_text(site_page(model, pdf), encoding='utf-8')
     (SITE / '.nojekyll').write_text('', encoding='utf-8')
+    (SITE / '.assetsignore').write_text('_worker.js\n', encoding='utf-8')
     shutil.copyfile(ROOT / 'web/_worker.js', SITE / '_worker.js')
     (SITE / 'context.md').write_text(ai_context(model), encoding='utf-8')
     (SITE / model['filename']).write_bytes(pdf)
