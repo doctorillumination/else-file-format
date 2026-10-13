@@ -4,7 +4,7 @@ const path = require('node:path');
 const { mkdtemp, writeFile, rm } = require('node:fs/promises');
 const { createHash } = require('node:crypto');
 const { pathToFileURL } = require('node:url');
-const { ORIGIN, HOME, POLICY, assetName, externalLink, openedFile, exportedBytes, readFile } = require('./boundary.cjs');
+const { ORIGIN, HOME, POLICY, assetName, externalLink, openedFile, exportedBytes, readFile, inlineRequest } = require('./boundary.cjs');
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 if (process.env.ELSE_TEST_USER_DATA) app.setPath('userData', process.env.ELSE_TEST_USER_DATA);
@@ -106,8 +106,13 @@ else {
     });
     local.webRequest.onBeforeRequest((details, callback) => {
       let permitted = false;
-      try { permitted = !!assetName(details.url, allowed) || details.url.startsWith('blob:' + ORIGIN + '/') || details.url.startsWith('data:'); } catch {}
+      try { permitted = !!assetName(details.url, allowed) || details.url.startsWith('blob:' + ORIGIN + '/') || details.url.startsWith('data:') || (details.webContentsId === window?.webContents.id && inlineRequest(details)); } catch {}
       callback({ cancel: !permitted });
+    });
+    local.webRequest.onBeforeSendHeaders((details, callback) => {
+      const headers = { ...details.requestHeaders };
+      if (inlineRequest(details)) headers.Referer = 'https://dotelse.app/';
+      callback({ requestHeaders: headers });
     });
     local.setPermissionRequestHandler((contents, permission, callback) => callback(contents === window?.webContents && permission === 'clipboard-sanitized-write'));
     local.setPermissionCheckHandler((contents, permission) => contents === window?.webContents && permission === 'clipboard-sanitized-write');

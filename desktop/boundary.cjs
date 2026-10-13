@@ -6,13 +6,39 @@ const ORIGIN = 'app://else';
 const HOME = ORIGIN + '/index.html';
 const MAX_ARCHIVE = 64 * 1024 * 1024;
 const MAX_PDF = 12 * 1024 * 1024;
-const POLICY = "default-src 'none'; style-src 'self'; script-src 'self'; worker-src 'self'; connect-src 'none'; frame-src 'none'; object-src 'none'; img-src 'self' data:; media-src blob:; font-src blob: data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+const POLICY = "default-src 'none'; style-src 'self'; script-src 'self'; worker-src 'self'; connect-src 'none'; frame-src https://sources.dotelse.app https://www.youtube-nocookie.com; object-src 'none'; img-src 'self' data:; media-src blob:; font-src blob: data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
 function assetName(address, allowed) {
   const url = new URL(address);
   if (url.protocol !== 'app:' || url.host !== 'else' || url.username || url.password || url.search) return null;
   const name = decodeURIComponent(url.pathname).replace(/^\//, '') || 'index.html';
   return allowed.has(name) ? name : null;
+}
+
+
+function inlineSourceURL(address) {
+  try {
+    const u = new URL(address);
+    if (u.protocol !== 'https:' || u.username || u.password || u.port) return false;
+    return (u.hostname === 'sources.dotelse.app' && u.pathname === '/live-post.html' && !u.search) ||
+      (u.hostname === 'www.youtube-nocookie.com' && /^\/embed\/[\w-]{11}$/.test(u.pathname));
+  } catch { return false; }
+}
+
+function sourceFrame(frame) {
+  // The root archive frame never gains network access. Remote descendants have no file bridge.
+  for (let depth = 0; frame && depth < 12; depth++, frame = frame.parent) {
+    if (!frame.parent) return false;
+    if (inlineSourceURL(frame.url)) return true;
+  }
+  return false;
+}
+function inlineRequest(details) {
+  try {
+    const u = new URL(details.url);
+    if (u.protocol !== 'https:' || u.username || u.password || u.port || details.resourceType === 'mainFrame') return false;
+    return sourceFrame(details.frame) || (details.resourceType === 'subFrame' && inlineSourceURL(details.url) && !!details.frame?.parent);
+  } catch { return false; }
 }
 
 function externalLink(address) {
@@ -57,4 +83,4 @@ function exportedBytes(value) {
   return bytes;
 }
 
-module.exports = { ORIGIN, HOME, POLICY, assetName, externalLink, safeFilename, openedFile, exportedBytes, readFile };
+module.exports = { ORIGIN, HOME, POLICY, assetName, externalLink, safeFilename, openedFile, exportedBytes, readFile, inlineSourceURL, inlineRequest };

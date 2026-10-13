@@ -53,3 +53,11 @@ All 14 publicly served files, including the HTML, CSS, JavaScript, renderer, sam
 - [Cloudflare static assets](https://developers.cloudflare.com/workers/static-assets/get-started/)
 - [Cloudflare Pages Git integration](https://developers.cloudflare.com/pages/get-started/git-integration/)
 - [Pages custom domains](https://developers.cloudflare.com/pages/configuration/custom-domains/)
+
+## Isolated live source view
+
+The visual mixed reader loads X and YouTube when online. `sources.dotelse.app` is an additional custom domain on the same Pages project. `web/_worker.js`, copied to `docs/_worker.js`, routes that hostname to just two public embed assets. It returns 404 for the reader, sample archives and every other path, and 405 for uploads. On the main hostname it delegates static serving to Pages. It has no storage bindings, accounts, selected-file handler or AI endpoint.
+
+The remote post view receives a numeric public post ID and a random message nonce. Source messages are checked against the frame, origin and nonce. The archive reader does not load a provider SDK. Desktop source descendants have HTTPS access while the root reader remains unable to make network requests. Child frames cannot call the native file bridge. Saved excerpts are available when a provider is unreachable.
+
+Deploy the generated `docs/` through the existing Git connection. Add `sources.dotelse.app` under the Pages project's Custom domains. Verify that the embed HTML returns 200 without `X-Frame-Options: DENY`, that `/mixed.html` on the source hostname returns 404, and that the main reader still denies framing and uploads. `node web/test_source_boundary.mjs` checks those routing and desktop rules locally.

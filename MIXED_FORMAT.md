@@ -55,7 +55,7 @@ Files remain unencrypted. Anyone with a copy can read it; copies cannot be recal
 
 ## Interaction and privacy
 
-Opening, composition, PDF reading, voice playback and extraction are local. Browser drafts stay in tab memory, without persistent storage, uploads, model calls or background source fetches. Native bridges are bounded. Carry collects without creating a Carry event. Invalid mixed imports retain an original recovery copy.
+Opening, composition, PDF reading, voice playback and extraction are local. Browser drafts stay in tab memory, without persistent storage, uploads or model calls. Live X and YouTube sources load automatically when online in isolated views with public source identifiers only. Saved excerpts remain available offline. Native bridges are bounded. Carry collects without creating a Carry event. Invalid mixed imports retain an original recovery copy.
 
 Live viewing is deliberate and separate. Browser references travel in URL fragments to an opener-free source window, keeping them out of application HTTP request URLs. Desktop uses a separate nonpersistent session without a preload/filesystem bridge. Carry uses its nonpersistent source reader. Providers control availability and may deny embedding or require login. Instagram remains a reference with an original-page link. Live views never replace saved text or become claimed signed content.
 

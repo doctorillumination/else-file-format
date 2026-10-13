@@ -7,7 +7,7 @@ import subprocess
 repository = 'doctorillumination/else-file-format'
 run_id = os.environ['ELSE_SOURCE_RUN']
 tag = os.environ['ELSE_RELEASE_TAG']
-if not run_id.isdecimal() or tag != 'v0.3.0-experiment':
+if not run_id.isdecimal() or tag != 'v0.4.0-experiment':
     raise SystemExit('Review the source run and release manifest before publishing.')
 
 
