@@ -21,7 +21,7 @@ jobs:
           python-version: '3.12'
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '24'
+          node-version: '24.22.1'
       - name: Build the native reader and desktop icon
         run: zsh build.sh --universal
       - name: Verify both readers and malformed fixtures
@@ -44,7 +44,7 @@ jobs:
           python-version: '3.12'
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '24'
+          node-version: '24.22.1'
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
@@ -53,4 +53,4 @@ jobs:
       - name: Verify Cloudflare publishes only the static website
         env:
           WRANGLER_SEND_METRICS: 'false'
-        run: npx --yes wrangler@4.149.0 deploy --dry-run
+        run: npx --yes wrangler@4.152.0 deploy --dry-run
