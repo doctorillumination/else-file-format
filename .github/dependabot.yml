@@ -1,11 +1,14 @@
 version: 2
 updates:
   - package-ecosystem: "npm"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     groups:
       compatible-updates:
         update-types: ["minor", "patch"]
@@ -14,7 +17,7 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     groups:
       compatible-updates:
         update-types: ["minor", "patch"]
